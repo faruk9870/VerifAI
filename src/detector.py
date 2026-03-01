@@ -1,0 +1,1 @@
+# AI Tespit algoritmaları buraya yazılacak
