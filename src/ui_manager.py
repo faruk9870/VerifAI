@@ -135,6 +135,79 @@ GLOBAL_STYLE = f"""
 """
 
 
+class ScoreGaugeWidget(QWidget):
+    """Yuvarlak güven skoru göstergesi widget'ı."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.score = 0
+        self.verdict = ""
+        self.color = COLORS['text_secondary']
+        self.emoji = ""
+        self.setMinimumSize(220, 220)
+        self.setMaximumSize(260, 260)
+
+    def set_score(self, score, verdict, color, emoji):
+        self.score = score
+        self.verdict = verdict
+        self.color = color
+        self.emoji = emoji
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+        center_x = w // 2
+        center_y = h // 2
+        radius = min(w, h) // 2 - 20
+
+        # Arka plan halkası
+        pen = QPen(QColor(COLORS['border']), 12)
+        pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen)
+        painter.drawArc(
+            center_x - radius, center_y - radius,
+            radius * 2, radius * 2,
+            225 * 16, -270 * 16
+        )
+
+        # Skor halkası
+        pen = QPen(QColor(self.color), 12)
+        pen.setCapStyle(Qt.RoundCap)
+        painter.setPen(pen)
+        angle = int(-270 * (self.score / 100.0))
+        painter.drawArc(
+            center_x - radius, center_y - radius,
+            radius * 2, radius * 2,
+            225 * 16, angle * 16
+        )
+
+        # Skor metni
+        painter.setPen(QColor(self.color))
+        font = QFont("Segoe UI", 36, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(
+            center_x - radius, center_y - 30,
+            radius * 2, 50,
+            Qt.AlignCenter, f"{self.score}"
+        )
+
+        # Karar metni
+        painter.setPen(QColor(COLORS['text_secondary']))
+        font = QFont("Segoe UI", 11, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(
+            center_x - radius, center_y + 20,
+            radius * 2, 30,
+            Qt.AlignCenter, self.verdict
+        )
+
+        painter.end()
+
+
 class UIManager(QWidget):
     def __init__(self):
         super().__init__()
@@ -142,7 +215,6 @@ class UIManager(QWidget):
         self.resize(800, 600)
         self.setStyleSheet(GLOBAL_STYLE)
         layout = QVBoxLayout(self)
-        label = QLabel("VerifAI - Analiz Paneli")
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet(f"font-size: 24px; color: {COLORS['gradient_start']};")
-        layout.addWidget(label)
+        self.gauge = ScoreGaugeWidget()
+        self.gauge.set_score(75, "Test", COLORS['accent_orange'], "")
+        layout.addWidget(self.gauge, alignment=Qt.AlignCenter)
