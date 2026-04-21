@@ -170,3 +170,63 @@ class ManipulationDetector:
         }
 
         return noise_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 3. AKILLI ELA (KENAR KORUMALI)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def detect_smart_ela(image_path, quality=90):
+        """
+        Yeni nesil ELA: Canny Edge ile maskelenmiş hata seviyesi analizi.
+
+        Returns:
+            tuple: (ela_map: ndarray, ai_score: int, stats: dict)
+        """
+        original = _imread_safe(image_path)
+        if original is None:
+            return None, 50, {}
+
+        gray_original = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
+
+        # ELA hesapla
+        _, encoded_img = cv2.imencode('.jpg', original, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+        compressed = cv2.imdecode(encoded_img, 1)
+        diff = cv2.absdiff(original, compressed)
+        gray_diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+        # Doğal kenarları maskele
+        edges = cv2.Canny(gray_original, 100, 200)
+        kernel = np.ones((3, 3), np.uint8)
+        edges_dilated = cv2.dilate(edges, kernel, iterations=1)
+        flat_areas_mask = cv2.bitwise_not(edges_dilated) / 255.0
+
+        # ELA'yı düz alan maskesi ile çarp
+        smart_ela = gray_diff * flat_areas_mask
+
+        # İstatistikler
+        ela_mean = np.mean(smart_ela)
+        ela_max = np.max(smart_ela)
+        ela_diff = ela_max - ela_mean
+        ela_std = np.std(smart_ela)
+
+        # Puanlama
+        if ela_diff > 240:
+            score = 85
+        elif ela_diff > 200:
+            score = 60
+        elif ela_diff > 150:
+            score = 40
+        else:
+            score = 15
+
+        # Görselleştirme
+        max_val = np.max(smart_ela) if np.max(smart_ela) > 0 else 1
+        ela_visual = ((smart_ela / max_val) * 255.0).astype(np.uint8)
+
+        stats = {
+            "ela_mean": round(ela_mean, 2),
+            "ela_max": round(float(ela_max), 2),
+            "ela_diff": round(float(ela_diff), 2),
+            "ela_std": round(ela_std, 2),
+        }
+
+        return ela_visual, score, stats
