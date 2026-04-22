@@ -230,3 +230,76 @@ class ManipulationDetector:
         }
 
         return ela_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 4. FFT FREKANS ANALİZİ (GELİŞTİRİLMİŞ)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def check_smart_fft(image_path, z_threshold=15):
+        """
+        FFT: Z-skoru + yüksek frekans enerji oranı.
+
+        Returns:
+            tuple: (fft_visual: ndarray, ai_score: int, is_recaptured: bool, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, False, {}
+
+        f_transform = np.fft.fft2(img)
+        f_shift = np.fft.fftshift(f_transform)
+        magnitude_spectrum = 20 * np.log(np.abs(f_shift) + 1)
+        fft_visual = cv2.normalize(magnitude_spectrum, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+
+        rows, cols = img.shape
+        crow, ccol = rows // 2, cols // 2
+
+        # Merkez ve çapraz maskeleme
+        high_freq_region = magnitude_spectrum.copy()
+        mask_size = 60
+        if rows > mask_size * 2 and cols > mask_size * 2:
+            high_freq_region[crow-mask_size:crow+mask_size, ccol-mask_size:ccol+mask_size] = 0
+
+        cross_thickness = 5
+        high_freq_region[crow-cross_thickness:crow+cross_thickness, :] = 0
+        high_freq_region[:, ccol-cross_thickness:ccol+cross_thickness] = 0
+
+        valid_pixels = high_freq_region[high_freq_region > 0]
+        if len(valid_pixels) == 0:
+            return fft_visual, 50, False, {}
+
+        hf_mean = np.mean(valid_pixels)
+        hf_std = np.std(valid_pixels)
+        if hf_std == 0:
+            hf_std = 1
+
+        z_score = (np.max(valid_pixels) - hf_mean) / hf_std
+        bright_pixels_count = np.sum(valid_pixels > (hf_mean + 3 * hf_std))
+
+        # Enerji oranı
+        total_energy = np.sum(magnitude_spectrum)
+        hf_energy = np.sum(valid_pixels)
+        hf_energy_ratio = hf_energy / total_energy if total_energy > 0 else 0
+
+        # Moiré tespiti
+        is_recaptured = False
+        if z_score > z_threshold and bright_pixels_count < 200:
+            is_recaptured = True
+
+        # Puanlama — AI'da yüksek frekans enerjisi genellikle düşüktür
+        if hf_energy_ratio < 0.25:
+            score = 75
+        elif hf_energy_ratio < 0.35:
+            score = 55
+        elif hf_energy_ratio < 0.45:
+            score = 35
+        else:
+            score = 15
+
+        stats = {
+            "z_score": round(z_score, 2),
+            "bright_pixels": int(bright_pixels_count),
+            "hf_energy_ratio": round(hf_energy_ratio, 4),
+            "is_recaptured": is_recaptured,
+        }
+
+        return fft_visual, score, is_recaptured, stats
