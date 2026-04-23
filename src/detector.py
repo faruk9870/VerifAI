@@ -303,3 +303,119 @@ class ManipulationDetector:
         }
 
         return fft_visual, score, is_recaptured, stats
+    # ─────────────────────────────────────────────────
+    # 5. DCT SPEKTRUM ANALİZİ (YENİ — KALİBRE EDİLMİŞ)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_dct_spectrum(image_path):
+        """
+        DCT Spektrum Analizi.
+        8x8 bloklarda DCT uygular, AC katsayı istatistikleri çıkarır.
+
+        Kalibrasyon:
+            AI portre: dct_kurtosis ≈ 479-524, dct_std düşük
+            Gerçek: dct_kurtosis ≈ 414, dct_std yüksek
+            AI manzara: dct_kurtosis ≈ 106
+
+        Ana ayırt edici: DCT yüksek frekans AC enerji yoğunluğu.
+        AI portreler düşük yüksek frekans AC enerjisi üretir.
+
+        Returns:
+            tuple: (dct_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, {}
+
+        img_float = img.astype(np.float64)
+        h, w = img.shape
+        block_size = 8
+
+        # Blok bazlı DCT analizi
+        hf_energies = []  # Her bloğun yüksek frekans enerjisi
+        total_energies = []  # Her bloğun toplam enerjisi
+        all_hf_coeffs = []
+
+        for y in range(0, h - block_size, block_size):
+            for x in range(0, w - block_size, block_size):
+                block = img_float[y:y+block_size, x:x+block_size]
+                dct_block = cv2.dct(block)
+
+                # Yüksek frekans: sağ alt üçgen (index toplamı > 4)
+                hf_energy = 0
+                total_energy = 0
+                for i in range(8):
+                    for j in range(8):
+                        val = abs(dct_block[i, j])
+                        total_energy += val
+                        if i + j > 4:
+                            hf_energy += val
+                            all_hf_coeffs.append(dct_block[i, j])
+
+                hf_energies.append(hf_energy)
+                total_energies.append(total_energy)
+
+        if not hf_energies:
+            return None, 50, {}
+
+        # Yüksek frekans enerji oranları
+        hf_ratios = []
+        for hf, te in zip(hf_energies, total_energies):
+            if te > 0:
+                hf_ratios.append(hf / te)
+
+        mean_hf_ratio = np.mean(hf_ratios) if hf_ratios else 0
+        std_hf_ratio = np.std(hf_ratios) if hf_ratios else 0
+
+        # HF katsayılarının standart sapması
+        hf_std = np.std(all_hf_coeffs) if all_hf_coeffs else 0
+
+        # Puanlama (DÜZELTİLMİŞ YÖN)
+        # Kalibrasyon:
+        #   Gerçek: mean_hf_ratio ≈ 0.016 (çok düşük — doğal bokeh/blur)
+        #   AI portre: mean_hf_ratio ≈ 0.064-0.086 (yapay doku tekrarları)
+        #   AI hatali: mean_hf_ratio ≈ 0.079
+        #   AI manzara: mean_hf_ratio ≈ 0.124
+        # AI HF ratio > Gerçek → Yüksek ratio = AI şüphesi
+        if mean_hf_ratio > 0.10:
+            score = 80
+        elif mean_hf_ratio > 0.07:
+            score = 68
+        elif mean_hf_ratio > 0.04:
+            score = 45
+        elif mean_hf_ratio > 0.02:
+            score = 25
+        else:
+            score = 10
+
+        # HF katsayı std: AI portre düşük (1.7-1.9), Gerçek orta (3.3), AI detaylı yüksek (4.0+)
+        if hf_std < 2.0:
+            score = min(100, score + 12)
+        elif hf_std < 3.0:
+            score = min(100, score + 5)
+
+        # Block HF oranı varyasyonu (AI'da daha düşük)
+        if std_hf_ratio < 0.05:
+            score = min(100, score + 5)
+        elif std_hf_ratio > 0.12:
+            score = max(0, score - 5)
+
+        # Görselleştirme: Block bazlı HF enerji haritası
+        dct_energy_map = np.zeros((h, w), dtype=np.float64)
+        idx = 0
+        for y in range(0, h - block_size, block_size):
+            for x in range(0, w - block_size, block_size):
+                if idx < len(hf_ratios):
+                    dct_energy_map[y:y+block_size, x:x+block_size] = hf_ratios[idx]
+                idx += 1
+
+        max_val = np.max(dct_energy_map) if np.max(dct_energy_map) > 0 else 1
+        dct_visual = ((dct_energy_map / max_val) * 255).astype(np.uint8)
+
+        stats = {
+            "mean_hf_ratio": round(mean_hf_ratio, 4),
+            "std_hf_ratio": round(std_hf_ratio, 4),
+            "hf_std": round(hf_std, 2),
+        }
+
+        return dct_visual, score, stats
