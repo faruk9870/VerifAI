@@ -419,3 +419,87 @@ class ManipulationDetector:
         }
 
         return dct_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 6. WAVELET ALT-BANT ANALİZİ (YENİ — KALİBRE)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_wavelet(image_path):
+        """
+        Wavelet Alt-Bant Analizi (Haar).
+
+        Kalibrasyon:
+            AI portre: hh_std ≈ 1.2-1.3, hh_ratio ≈ 0.000026-0.000039
+            Gerçek: hh_std ≈ 1.6, hh_ratio ≈ 0.000027
+            AI+ekran: hh_std ≈ 1.4
+
+        hh_std gerçek (1.6) ve AI (1.2-1.3) arasında küçük fark var.
+
+        Returns:
+            tuple: (wavelet_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, {}
+
+        img_float = img.astype(np.float64)
+
+        # Daubechies (db2) wavelet decomposition (3 seviye)
+        # Doğal görüntü istatistiklerini haar'a göre daha iyi modeller.
+        coeffs = pywt.wavedec2(img_float, 'db2', level=3)
+
+        # Seviyelerdeki HH bantlarının enerjisi
+        hh_energies = []
+        hh_stds = []
+        total_detail_energy = 0
+
+        for level_coeffs in coeffs[1:]:
+            cH, cV, cD = level_coeffs
+            hh_energies.append(np.sum(cD ** 2))
+            hh_stds.append(np.std(cD))
+            total_detail_energy += np.sum(cH ** 2) + np.sum(cV ** 2) + np.sum(cD ** 2)
+
+        ll_energy = np.sum(coeffs[0] ** 2)
+        total_energy = ll_energy + total_detail_energy
+
+        # En ince seviyenin (seviye 1) HH bandı
+        finest_hh = coeffs[-1][2]  # Son seviye = en ince = orijinale en yakın
+        finest_hh_std = np.std(finest_hh)
+        finest_hh_energy = np.sum(finest_hh ** 2)
+        finest_hh_ratio = finest_hh_energy / total_energy if total_energy > 0 else 0
+
+        # Detail/Total enerji oranı
+        detail_ratio = total_detail_energy / total_energy if total_energy > 0 else 0
+
+        # Puanlama
+        # AI: finest_hh_std < 0.6, detail_ratio düşük
+        # Gerçek: finest_hh_std > 1.0, detail_ratio yüksek
+        if finest_hh_std < 0.5:
+            score = 88
+        elif finest_hh_std < 0.8:
+            score = 72
+        elif finest_hh_std < 1.0:
+            score = 48
+        elif finest_hh_std < 2.0:
+            score = 28
+        else:
+            score = 12
+
+        # Detail ratio bonusu
+        if detail_ratio < 0.0005:
+            score = min(100, score + 12)
+        elif detail_ratio > 0.003:
+            score = max(0, score - 10)
+
+        # Görselleştirme
+        hh_visual = np.abs(finest_hh)
+        max_val = np.max(hh_visual) if np.max(hh_visual) > 0 else 1
+        hh_visual = ((hh_visual / max_val) * 255).astype(np.uint8)
+        hh_visual = cv2.resize(hh_visual, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+
+        stats = {
+            "finest_hh_std": round(finest_hh_std, 2),
+            "finest_hh_ratio": round(finest_hh_ratio, 6),
+            "detail_ratio": round(detail_ratio, 6),
+        }
+
+        return hh_visual, score, stats
