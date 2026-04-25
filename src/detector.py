@@ -503,3 +503,127 @@ class ManipulationDetector:
         }
 
         return hh_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 7. RENK İSTATİSTİK ANALİZİ (YENİ)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_color_statistics(image_path):
+        """
+        Renk kanalları arası korelasyon ve histogram entropisi.
+
+        Kalibrasyon:
+            AI portre: corr ≈ 0.945-0.948
+            Gerçek: corr ≈ 0.946
+            AI manzara: corr ≈ 0.801
+
+        Not: Korelasyon tek başına yeterli değil, entropi ve saturation ile birleştirilecek.
+
+        Returns:
+            tuple: (color_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path)
+        if img is None:
+            return None, 50, {}
+
+        b, g, r = cv2.split(img)
+
+        # Kanal korelasyonları
+        rg_corr = np.corrcoef(r.flatten(), g.flatten())[0, 1]
+        rb_corr = np.corrcoef(r.flatten(), b.flatten())[0, 1]
+        gb_corr = np.corrcoef(g.flatten(), b.flatten())[0, 1]
+        mean_corr = (abs(rg_corr) + abs(rb_corr) + abs(gb_corr)) / 3
+
+        # Histogram entropisi
+        def channel_entropy(channel):
+            hist = cv2.calcHist([channel], [0], None, [256], [0, 256]).flatten()
+            hist = hist / hist.sum()
+            hist = hist[hist > 0]
+            return -np.sum(hist * np.log2(hist))
+
+        r_entropy = channel_entropy(r)
+        g_entropy = channel_entropy(g)
+        b_entropy = channel_entropy(b)
+        mean_entropy = (r_entropy + g_entropy + b_entropy) / 3
+
+        # Saturation analizi
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        saturation = hsv[:, :, 1]
+        sat_std = np.std(saturation)
+        sat_mean = np.mean(saturation)
+
+        # YCbCr Krominans Analizi (Cb, Cr kanalları varyansı)
+        # Doğal fotoğraflarda bayer filtresi nedeniyle Cb/Cr kanallarında spesifik varyans bulunur.
+        ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+        cr = ycbcr[:, :, 1]
+        cb = ycbcr[:, :, 2]
+        cr_std = np.std(cr)
+        cb_std = np.std(cb)
+        chrominance_var = (cr_std + cb_std) / 2
+
+        # Renk histogram pürüzsüzlüğü (AI genelde daha smooth histogram üretir)
+        hist_smoothness = 0
+        for ch in [r, g, b]:
+            hist = cv2.calcHist([ch], [0], None, [256], [0, 256]).flatten()
+            hist_diff = np.diff(hist)
+            hist_smoothness += np.std(hist_diff)
+        hist_smoothness /= 3
+
+        # Puanlama (DÜZELTİLMİŞ)
+        # Kalibrasyon:
+        #   Gerçek: sat_std ≈ 24, hist_smooth ≈ 1200
+        #   AI portre: sat_std ≈ 41-47, hist_smooth ≈ 823-1117  
+        #   AI hatali: sat_std ≈ 46, hist_smooth ≈ 330
+        score = 50
+
+        # Saturation std: AI YÜKSEK (40-47), Gerçek DÜŞÜK (24)
+        # Bu en güçlü renk ayrıştırıcısı
+        if sat_std > 45:
+            score += 20
+        elif sat_std > 38:
+            score += 12
+        elif sat_std > 30:
+            score += 5
+        elif sat_std < 26:
+            score -= 15
+
+        # Krominans varyansı (AI üretimi genellikle krominans düzleminde daha pürüzsüzdür)
+        # Doğal görüntülerde renk gürültüsü daha fazladır.
+        if chrominance_var < 5.0:
+            score += 10
+        elif chrominance_var < 8.0:
+            score += 5
+        elif chrominance_var > 15.0:
+            score -= 8
+
+        # Histogram pürüzsüzlüğü: Gerçek yüksek (1200), AI hatali düşük (330)
+        # Düşük smoothness = AI olabilir
+        if hist_smoothness < 400:
+            score += 10
+        elif hist_smoothness < 700:
+            score += 3
+        elif hist_smoothness > 1000:
+            score -= 8
+
+        # Düşük entropi → AI
+        if mean_entropy < 6.5:
+            score += 8
+        elif mean_entropy < 7.0:
+            score += 3
+        elif mean_entropy > 7.5:
+            score -= 5
+
+        score = max(0, min(100, score))
+
+        # Görselleştirme
+        sat_visual = cv2.equalizeHist(saturation)
+
+        stats = {
+            "mean_corr": round(mean_corr, 4),
+            "mean_entropy": round(mean_entropy, 2),
+            "sat_std": round(sat_std, 2),
+            "sat_mean": round(sat_mean, 2),
+            "chrominance_var": round(chrominance_var, 2),
+            "hist_smoothness": round(hist_smoothness, 2),
+        }
+
+        return sat_visual, score, stats
