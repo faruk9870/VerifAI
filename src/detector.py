@@ -627,3 +627,105 @@ class ManipulationDetector:
         }
 
         return sat_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 8. GLCM DOKU ANALİZİ (YENİ — KALİBRE)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_glcm_texture(image_path):
+        """
+        GLCM doku analizi.
+
+        Kalibrasyon:
+            AI portre: homo ≈ 0.527-0.566, contrast ≈ 13-17
+            Gerçek: homo ≈ 0.562, contrast ≈ 31
+            AI manzara: homo ≈ 0.324, contrast ≈ 39
+
+        Ana ayırt edici: contrast düşüklüğü (AI portre < 20, Gerçek > 25)
+
+        Returns:
+            tuple: (texture_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, {}
+
+        # Görüntüyü küçült
+        max_dim = 512
+        h, w = img.shape
+        if max(h, w) > max_dim:
+            scale = max_dim / max(h, w)
+            img_resized = cv2.resize(img, None, fx=scale, fy=scale)
+        else:
+            img_resized = img.copy()
+
+        # GLCM
+        levels = 64
+        img_quantized = (img_resized / 256 * levels).astype(np.uint8)
+
+        distances = [1, 3]
+        angles = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+        glcm = graycomatrix(img_quantized, distances=distances, angles=angles,
+                            levels=levels, symmetric=True, normed=True)
+
+        contrast = np.mean(graycoprops(glcm, 'contrast'))
+        correlation = np.mean(graycoprops(glcm, 'correlation'))
+        energy = np.mean(graycoprops(glcm, 'energy'))
+        homogeneity = np.mean(graycoprops(glcm, 'homogeneity'))
+
+        # Puanlama (kalibre edilmiş)
+        score = 50
+
+        # Düşük contrast → AI portre
+        # SADECE çok düşük kontrastı AI say. Ön kameralar ~15-25 arası kontrastla çekiyor.
+        if contrast < 5:
+            score += 25
+        elif contrast < 8:
+            score += 12
+        elif contrast > 25:
+            score -= 18
+
+        # Yüksek homogeneity → AI (sadece aşırı yüksek değerler)
+        if homogeneity > 0.65:
+            score += 10
+        elif homogeneity > 0.55:
+            score += 3
+        elif homogeneity < 0.30:
+            score -= 10
+
+        # Yüksek energy → uniformik → AI (sadece aşırı)
+        if energy > 0.012:
+            score += 8
+        elif energy < 0.002:
+            score -= 5
+
+        score = max(0, min(100, score))
+
+        # Görselleştirme: block homogeneity haritası
+        block_sz = 32
+        h_r, w_r = img_resized.shape
+        homo_map = np.zeros_like(img_resized, dtype=np.float64)
+
+        for y in range(0, h_r - block_sz, block_sz // 2):
+            for x in range(0, w_r - block_sz, block_sz // 2):
+                block = img_resized[y:y+block_sz, x:x+block_sz]
+                block_q = (block / 256 * levels).astype(np.uint8)
+                try:
+                    local_glcm = graycomatrix(block_q, distances=[1], angles=[0],
+                                              levels=levels, symmetric=True, normed=True)
+                    local_homo = graycoprops(local_glcm, 'homogeneity')[0, 0]
+                    homo_map[y:y+block_sz, x:x+block_sz] = local_homo
+                except Exception:
+                    pass
+
+        max_val = np.max(homo_map) if np.max(homo_map) > 0 else 1
+        texture_visual = ((homo_map / max_val) * 255).astype(np.uint8)
+        texture_visual = cv2.resize(texture_visual, (w, h), interpolation=cv2.INTER_LINEAR)
+
+        stats = {
+            "contrast": round(contrast, 2),
+            "correlation": round(correlation, 4),
+            "energy": round(energy, 6),
+            "homogeneity": round(homogeneity, 4),
+        }
+
+        return texture_visual, score, stats
