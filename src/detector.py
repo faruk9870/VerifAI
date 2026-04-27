@@ -729,3 +729,102 @@ class ManipulationDetector:
         }
 
         return texture_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # 9. KENAR TUTARLILIK ANALİZİ (YENİ — KALİBRE)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_edge_consistency(image_path):
+        """
+        Kenar keskinliği ve tutarlılık analizi.
+
+        Kalibrasyon:
+            AI portre: lap_var ≈ 34-61
+            Gerçek: lap_var ≈ 138
+            AI manzara: lap_var ≈ 359 (detaylı manzara)
+
+        En güçlü ayırt edici: Laplacian varyansı.
+        AI portre: < 80, Gerçek: > 100
+
+        Returns:
+            tuple: (edge_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, {}
+
+        # Laplacian varyansı
+        laplacian = cv2.Laplacian(img, cv2.CV_64F)
+        lap_var = np.var(laplacian)
+
+        # Sobel kenarları
+        sobel_x = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+        sobel_mag = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+
+        # Gradient kurtosis — EN GÜÇLÜ YENİ AYRIŞTIRICI
+        # Kalibrasyon:
+        #   Gerçek: grad_kurtosis ≈ 46 (çok sivri — doğal kenar dağılımı)
+        #   AI portre: grad_kurtosis ≈ 35-44 (yüksek ama biraz düşük)
+        #   AI hatali: grad_kurtosis ≈ 17 (çok düşük — yapay düzgünlük)
+        #   AI manzara: grad_kurtosis ≈ 14 (en düşük)
+        grad_kurtosis = kurtosis(sobel_mag.flatten())
+
+        # Kenar yoğunluğu
+        canny = cv2.Canny(img, 50, 150)
+        edge_density = np.sum(canny > 0) / canny.size
+
+        # Bölgesel kenar varyasyonu
+        h, w = img.shape
+        block_size = min(64, max(8, h // 4), max(8, w // 4))
+
+        block_edge_densities = []
+        for y in range(0, h - block_size, block_size):
+            for x in range(0, w - block_size, block_size):
+                block = canny[y:y+block_size, x:x+block_size]
+                block_edge_densities.append(np.sum(block > 0) / block.size)
+
+        edge_var = np.std(block_edge_densities) if block_edge_densities else 0
+
+        # ── Puanlama (ÇİFT METRİK: lap_var + grad_kurtosis)
+        
+        # Birincil: Gradient kurtosis
+        # Düşük kurtosis = yapay gradient dağılımı = AI
+        if grad_kurtosis < 10:
+            score = 92
+        elif grad_kurtosis < 15:
+            score = 75
+        elif grad_kurtosis < 25:
+            score = 55
+        elif grad_kurtosis < 40:
+            score = 35
+        else:
+            score = 15
+
+        # İkincil: Laplacian varyansı (sadece portre/düz sahneler için)
+        if lap_var < 50:
+            score = min(100, score + 12)
+        elif lap_var < 80:
+            score = min(100, score + 5)
+        elif lap_var > 200:
+            score = max(0, score - 8)
+
+        # Kenar yoğunluğu bonusu
+        if edge_density < 0.02:
+            score = min(100, score + 5)
+        elif edge_density > 0.10:
+            score = max(0, score - 5)
+
+        score = max(0, min(100, score))
+
+        # Görselleştirme
+        max_val = np.max(sobel_mag) if np.max(sobel_mag) > 0 else 1
+        edge_visual = ((sobel_mag / max_val) * 255).astype(np.uint8)
+
+        stats = {
+            "lap_var": round(lap_var, 2),
+            "grad_kurtosis": round(grad_kurtosis, 2),
+            "edge_density": round(edge_density, 4),
+            "edge_regional_var": round(edge_var, 4),
+        }
+
+        return edge_visual, score, stats
