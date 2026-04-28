@@ -828,3 +828,113 @@ class ManipulationDetector:
         }
 
         return edge_visual, score, stats
+    # ─────────────────────────────────────────────────
+    # SOSYAL MEDYA SIKIŞTIRMA TESPİTİ
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def check_social_media_wash(image_path, has_exif):
+        """
+        Sosyal medya sıkıştırması tespiti — DEVRE DIŞI.
+        Gürültü ve ELA algoritmalarını susturduğu için devre dışı bırakıldı.
+        Bu algoritmalar en güçlü ayrıştırıcılar olduğundan, her zaman aktif olmalılar.
+        """
+        return False
+    # ─────────────────────────────────────────────────
+    # ANA ANALİZ ORKESTRATÖRÜ
+    # ─────────────────────────────────────────────────
+    @classmethod
+    def run_full_suite(cls, image_path, threshold=15):
+        """
+        Tüm 8 algoritmayı çalıştırır.
+
+        Returns:
+            dict: Tam analiz sonuçları
+        """
+        # 1. Metadata
+        has_exif, exif_info, metadata_score = cls.analyze_metadata(image_path)
+        is_washed = cls.check_social_media_wash(image_path, has_exif)
+
+        # 2. Gürültü Residual
+        noise_map, noise_score, noise_stats = cls.detect_noise_residual(image_path)
+
+        # 3. Akıllı ELA
+        ela_map, ela_score, ela_stats = cls.detect_smart_ela(image_path)
+
+        # 4. FFT
+        fft_map, fft_score, is_recaptured, fft_stats = cls.check_smart_fft(image_path, threshold)
+
+        # 5. DCT
+        dct_map, dct_score, dct_stats = cls.analyze_dct_spectrum(image_path)
+
+        # 6. Wavelet
+        wavelet_map, wavelet_score, wavelet_stats = cls.analyze_wavelet(image_path)
+
+        # 7. Renk İstatistik
+        color_map, color_score, color_stats = cls.analyze_color_statistics(image_path)
+
+        # 8. GLCM Doku
+        glcm_map, glcm_score, glcm_stats = cls.analyze_glcm_texture(image_path)
+
+        # 9. Kenar Tutarlılık
+        edge_map, edge_score, edge_stats = cls.analyze_edge_consistency(image_path)
+
+        # 10. LBP (henuz eklenmedi)
+        lbp_score = 50
+        lbp_stats = {}
+        lbp_map = None
+
+        algorithm_scores = {
+            "metadata": metadata_score,
+            "noise": noise_score,
+            "ela": ela_score,
+            "fft": fft_score,
+            "dct": dct_score,
+            "wavelet": wavelet_score,
+            "color_stats": color_score,
+            "glcm_texture": glcm_score,
+            "edge_consistency": edge_score,
+            "lbp_texture": lbp_score,
+        }
+
+        algorithm_stats = {
+            "metadata": {"exif_info": exif_info, "has_exif": has_exif},
+            "noise": noise_stats,
+            "ela": ela_stats,
+            "fft": fft_stats,
+            "dct": dct_stats,
+            "wavelet": wavelet_stats,
+            "color_stats": color_stats,
+            "glcm_texture": glcm_stats,
+            "edge_consistency": edge_stats,
+            "lbp_texture": lbp_stats,
+        }
+
+        maps = {
+            "Gürültü Residual": noise_map,
+            "Akıllı ELA": ela_map,
+            "FFT Frekans": fft_map,
+            "DCT Spektrum": dct_map,
+            "Wavelet HH Bandı": wavelet_map,
+            "Renk Doygunluk": color_map,
+            "GLCM Doku": glcm_map,
+            "Kenar Haritası": edge_map,
+            "LBP Mikro-Doku": lbp_map,
+        }
+
+        # None map'leri temizle
+        maps = {k: v for k, v in maps.items() if v is not None}
+
+        modifiers = {
+            "has_exif": has_exif,
+            "metadata_score": metadata_score,
+            "is_social_washed": is_washed,
+            "is_recaptured": is_recaptured,
+        }
+
+        return {
+            "algorithm_scores": algorithm_scores,
+            "algorithm_stats": algorithm_stats,
+            "maps": maps,
+            "modifiers": modifiers,
+            "exif_info": exif_info,
+        }
