@@ -1,6 +1,8 @@
 numpy>=2.0
 opencv-python>=4.8
+PyQt5>=5.15
 Pillow>=10.0
 scipy>=1.12
 PyWavelets>=1.5
 scikit-image>=0.22
+matplotlib>=3.8
