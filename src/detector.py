@@ -840,6 +840,71 @@ class ManipulationDetector:
         """
         return False
     # ─────────────────────────────────────────────────
+    # 10. LBP (LOCAL BINARY PATTERN) DOKU ANALİZİ (YENİ)
+    # ─────────────────────────────────────────────────
+    @staticmethod
+    def analyze_lbp_texture(image_path):
+        """
+        LBP (Local Binary Pattern) mikro-doku analizi.
+        AI üretimi görseller pikseller arası komşuluklarda (mikro seviyede) 
+        doğal kamera sensörü gürültüsü üretemez ve çok uniform (tekdüze) desenler oluşturur.
+        Gerçek fotoğraflarda sensör gürültüsü nedeniyle LBP histogramı daha dağınıktır.
+        
+        Returns:
+            tuple: (lbp_visual: ndarray, ai_score: int, stats: dict)
+        """
+        img = _imread_safe(image_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            return None, 50, {}
+            
+        radius = 1
+        n_points = 8 * radius
+        
+        # 'uniform' metodunu kullanıyoruz, bu metod rotasyondan bağımsızdır ve temel doku yapılarını bulur
+        lbp = local_binary_pattern(img, n_points, radius, method='uniform')
+        
+        # LBP Histogramı hesapla
+        n_bins = int(lbp.max() + 1)
+        hist, _ = np.histogram(lbp.ravel(), bins=n_bins, range=(0, n_bins), density=True)
+        
+        # En baskın desenin yoğunluğu (AI'da bu değer genelde daha yüksektir çünkü görüntü pürüzsüzdür)
+        max_pattern_ratio = np.max(hist)
+        
+        # Histogram varyansı (AI'da düşüktür)
+        hist_var = np.var(hist)
+        
+        # Puanlama Kalibrasyonu
+        # max_pattern_ratio düşükse (< 0.25) -> Sıkıştırma yok, AI olma ihtimali çok yüksek
+        # max_pattern_ratio yüksekse (> 0.35) -> Kamera/JPEG sıkıştırma izleri, gerçek olma ihtimali yüksek
+        
+        score = 50
+        
+        if max_pattern_ratio < 0.20:
+            score += 35
+        elif max_pattern_ratio < 0.25:
+            score += 20
+        elif max_pattern_ratio > 0.45:
+            score -= 30
+        elif max_pattern_ratio > 0.35:
+            score -= 15
+            
+        if hist_var < 0.002:
+            score += 15
+        elif hist_var > 0.010:
+            score -= 10
+            
+        score = max(0, min(100, score))
+        
+        # Görselleştirme
+        lbp_visual = (lbp * (255.0 / (n_bins - 1))).astype(np.uint8)
+        
+        stats = {
+            "max_pattern_ratio": round(max_pattern_ratio, 4),
+            "lbp_hist_var": round(hist_var, 6),
+        }
+        
+        return lbp_visual, score, stats
+    # ─────────────────────────────────────────────────
     # ANA ANALİZ ORKESTRATÖRÜ
     # ─────────────────────────────────────────────────
     @classmethod
@@ -878,10 +943,8 @@ class ManipulationDetector:
         # 9. Kenar Tutarlılık
         edge_map, edge_score, edge_stats = cls.analyze_edge_consistency(image_path)
 
-        # 10. LBP (henuz eklenmedi)
-        lbp_score = 50
-        lbp_stats = {}
-        lbp_map = None
+        # 10. LBP Mikro-Doku
+        lbp_map, lbp_score, lbp_stats = cls.analyze_lbp_texture(image_path)
 
         algorithm_scores = {
             "metadata": metadata_score,
