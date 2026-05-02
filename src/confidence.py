@@ -34,6 +34,7 @@ class ConfidenceEngine:
         "edge_consistency": 0.14,
         "lbp_texture":      0.10,
     }
+
     # Skor → Karar eşleme tablosu
     VERDICT_TABLE = [
         (25,  "GERÇEK",             "Yüksek güvenle gerçek fotoğraf.",                       "#2ecc71", "🟢"),
@@ -42,6 +43,7 @@ class ConfidenceEngine:
         (85,  "ŞÜPHELİ",          "Birden fazla algoritma AI izleri tespit etti.",           "#e67e22", "🟠"),
         (101, "AI ÜRETİMİ",        "Çok güçlü yapay üretim sinyalleri.",                     "#e74c3c", "🔴"),
     ]
+
     @classmethod
     def compute(cls, algorithm_scores: dict, modifiers: dict = None) -> dict:
         """
@@ -229,6 +231,7 @@ class ConfidenceEngine:
             "exif_adjustment": exif_adjustment,
             "per_algorithm": per_algo_details,
         }
+
     @classmethod
     def get_algo_display_names(cls) -> dict:
         """UI'da gösterilecek anlaşılır algoritma isimleri."""
