@@ -34,7 +34,8 @@ def _imread_safe(path, flags=cv2.IMREAD_COLOR):
 
 
 class ManipulationDetector:
-    """10 algoritmali ana tespit sinifi."""
+    """8 algoritmayı içeren ana tespit sınıfı."""
+
     # ─────────────────────────────────────────────────
     # 1. EXIF / METADATA ANALİZİ
     # ─────────────────────────────────────────────────
@@ -82,6 +83,7 @@ class ManipulationDetector:
             return True, "EXIF var ama donanım izi yok.", 55
         except Exception:
             return False, "EXIF Okuma Hatası", 60
+
     # ─────────────────────────────────────────────────
     # 2. GÜRÜLTÜ RESİDUAL ANALİZİ (GELİŞTİRİLMİŞ)
     # ─────────────────────────────────────────────────
@@ -170,6 +172,7 @@ class ManipulationDetector:
         }
 
         return noise_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 3. AKILLI ELA (KENAR KORUMALI)
     # ─────────────────────────────────────────────────
@@ -230,6 +233,7 @@ class ManipulationDetector:
         }
 
         return ela_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 4. FFT FREKANS ANALİZİ (GELİŞTİRİLMİŞ)
     # ─────────────────────────────────────────────────
@@ -303,6 +307,7 @@ class ManipulationDetector:
         }
 
         return fft_visual, score, is_recaptured, stats
+
     # ─────────────────────────────────────────────────
     # 5. DCT SPEKTRUM ANALİZİ (YENİ — KALİBRE EDİLMİŞ)
     # ─────────────────────────────────────────────────
@@ -419,6 +424,7 @@ class ManipulationDetector:
         }
 
         return dct_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 6. WAVELET ALT-BANT ANALİZİ (YENİ — KALİBRE)
     # ─────────────────────────────────────────────────
@@ -503,6 +509,7 @@ class ManipulationDetector:
         }
 
         return hh_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 7. RENK İSTATİSTİK ANALİZİ (YENİ)
     # ─────────────────────────────────────────────────
@@ -627,6 +634,7 @@ class ManipulationDetector:
         }
 
         return sat_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 8. GLCM DOKU ANALİZİ (YENİ — KALİBRE)
     # ─────────────────────────────────────────────────
@@ -729,6 +737,7 @@ class ManipulationDetector:
         }
 
         return texture_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # 9. KENAR TUTARLILIK ANALİZİ (YENİ — KALİBRE)
     # ─────────────────────────────────────────────────
@@ -828,6 +837,7 @@ class ManipulationDetector:
         }
 
         return edge_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # SOSYAL MEDYA SIKIŞTIRMA TESPİTİ
     # ─────────────────────────────────────────────────
@@ -839,6 +849,7 @@ class ManipulationDetector:
         Bu algoritmalar en güçlü ayrıştırıcılar olduğundan, her zaman aktif olmalılar.
         """
         return False
+
     # ─────────────────────────────────────────────────
     # 10. LBP (LOCAL BINARY PATTERN) DOKU ANALİZİ (YENİ)
     # ─────────────────────────────────────────────────
@@ -904,6 +915,7 @@ class ManipulationDetector:
         }
         
         return lbp_visual, score, stats
+
     # ─────────────────────────────────────────────────
     # ANA ANALİZ ORKESTRATÖRÜ
     # ─────────────────────────────────────────────────
