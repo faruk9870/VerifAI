@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+# VerifAI
+
+> Yapay Zeka tarafindan uretilmis gorselleri tespit eden sistem.
+=======
 # 🔍 VerifAI
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
@@ -17,3 +22,4 @@ görsellerdeki karakteristik izleri, difüzyon kalıntılarını ve frekans anom
 **30. Grup**
 
 Proje aktif geliştirme aşamasındadır. Detaylar ilerleyen günlerde güncellenecektir.
+>>>>>>> e9ed43ce282d2329e2b39f7cd330ab5eaf36a57e
