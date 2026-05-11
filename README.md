@@ -1,19 +1,35 @@
 # 🔍 VerifAI
 
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
-[![Status](https://img.shields.io/badge/Durum-Geliştiriliyor-orange?style=flat-square)]()
+VerifAI, dijital görsellerin orijinalliğini doğrulamak ve yapay zeka (AI) tarafından üretilip üretilmediğini tespit etmek için geliştirilmiş bir görüntü analiz sistemidir.
 
-> Yapay Zeka tarafından üretilmiş görselleri tespit eden derin öğrenme tabanlı görüntü analiz sistemi.
+Şu anda proje bir masaüstü uygulaması (GUI) olarak geliştirilmektedir. (İlerleyen aşamalarda web tabanlı bir arayüze dönüştürülmesi planlanmaktadır.)
 
-## 📖 Proje Hakkında
+## 🚀 Özellikler
 
-VerifAI, dijital görüntülerin orijinalliğini doğrulamak amacıyla geliştirilmiş bir sistemdir.  
-Üretken yapay zeka modelleri (Stable Diffusion, Midjourney, DALL-E vb.) tarafından oluşturulan  
-görsellerdeki karakteristik izleri, difüzyon kalıntılarını ve frekans anomalilerini analiz ederek  
-**"gerçek"** ile **"yapay"** ayrımı yapmayı hedefler.
+- **Görsel Analizi:** Görsellerdeki manipülasyonları, difüzyon kalıntılarını ve yapay zeka izlerini derin öğrenme tabanlı analiz eder.
+- **Kullanıcı Arayüzü:** Kullanımı kolay grafik arayüz (GUI) üzerinden görselleri seçip detaylı analiz sonuçlarını görebilirsiniz.
 
-## 📌 Durum
+## 🛠️ Kurulum ve Kullanım
 
-**30. Grup**
+Projeyi izole bir ortamda sorunsuz çalıştırmak için Python sanal ortamı (`venv`) kullanmanız gerekmektedir.
 
-Proje aktif geliştirme aşamasındadır. Detaylar ilerleyen günlerde güncellenecektir.
+**1. Sanal Ortam (venv) Oluşturma ve Aktifleştirme:**
+Proje dizininde terminali açın ve sanal ortamı oluşturup aktifleştirin:
+```bash
+python -m venv venv
+
+# Windows için:
+venv\Scripts\activate
+```
+
+**2. Gerekli Kütüphaneleri Yükleme:**
+Sanal ortam aktifken gerekli bağımlılıkları yükleyin:
+```bash
+pip install -r requirements.txt
+```
+
+**3. Uygulamayı Başlatma:**
+Kurulum tamamlandıktan sonra ana programı (arayüzü) başlatmak için:
+```bash
+python src/main.py
+```
