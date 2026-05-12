@@ -1,6 +1,6 @@
 """
-VerifAI — İleri Seviye Adli Bilişim Arayüzü
-Güven skoru göstergesi, radar grafiği, algoritma detayları ve harita görüntüleyici.
+VerifAI — Ileri Seviye Adli Bilisim Arayuzu
+Guven skoru gostergesi, radar grafigi, algoritma detaylari ve harita goruntuleyici.
 """
 
 import numpy as np
@@ -24,7 +24,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 
 # ─────────────────────────────────────────────
-# RENK PALETİ
+# RENK PALETI
 # ─────────────────────────────────────────────
 COLORS = {
     "bg_dark":       "#0d1117",
@@ -136,7 +136,7 @@ GLOBAL_STYLE = f"""
 
 
 class ScoreGaugeWidget(QWidget):
-    """Yuvarlak güven skoru göstergesi widget'ı."""
+    """Yuvarlak guven skoru gostergesi widget'i."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -164,7 +164,7 @@ class ScoreGaugeWidget(QWidget):
         center_y = h // 2
         radius = min(w, h) // 2 - 20
 
-        # Arka plan halkası
+        # Arka plan halkasi
         pen = QPen(QColor(COLORS['border']), 12)
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
@@ -174,7 +174,7 @@ class ScoreGaugeWidget(QWidget):
             225 * 16, -270 * 16
         )
 
-        # Skor halkası
+        # Skor halkasi
         pen = QPen(QColor(self.color), 12)
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
@@ -209,11 +209,11 @@ class ScoreGaugeWidget(QWidget):
 
 
 class AlgorithmCard(QFrame):
-    """Tek bir algoritmanın sonucunu gösteren kart widget'ı."""
+    """Tek bir algoritmanin sonucunu gosteren kart widget'i."""
 
     def __init__(self, name, display_name, description, score, active=True, parent=None):
         super().__init__(parent)
-        # Kalkan sistemi float üretebilir, PyQt int bekler
+        # Kalkan sistemi float uretebilir, PyQt int bekler
         score = int(round(score))
         
         self.setStyleSheet(f"""
@@ -232,7 +232,7 @@ class AlgorithmCard(QFrame):
         layout = QVBoxLayout(self)
         layout.setSpacing(6)
 
-        # Üst satır: İsim + Skor
+        # Ust satir: Isim + Skor
         top_row = QHBoxLayout()
 
         lbl_name = QLabel(f"  {display_name}")
@@ -248,7 +248,7 @@ class AlgorithmCard(QFrame):
 
         layout.addLayout(top_row)
 
-        # Skor çubuğu
+        # Skor cubugu
         progress = QProgressBar()
         progress.setRange(0, 100)
         progress.setValue(score if active else 0)
@@ -267,14 +267,14 @@ class AlgorithmCard(QFrame):
         """)
         layout.addWidget(progress)
 
-        # Açıklama
+        # Aciklama
         lbl_desc = QLabel(description)
         lbl_desc.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px; border: none;")
         lbl_desc.setWordWrap(True)
         layout.addWidget(lbl_desc)
 
         if not active:
-            inactive_lbl = QLabel("⏸ Devre dışı (Sosyal medya sıkıştırması)")
+            inactive_lbl = QLabel("⏸ Devre disi (Sosyal medya sikistirmasi)")
             inactive_lbl.setStyleSheet(f"color: {COLORS['accent_orange']}; font-size: 10px; font-style: italic; border: none;")
             layout.addWidget(inactive_lbl)
 
@@ -303,7 +303,7 @@ class UIManager(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("VerifAI — İleri Seviye AI Tespit Sistemi")
+        self.setWindowTitle("VerifAI — Ileri Seviye AI Tespit Sistemi")
         self.resize(1280, 850)
         self.setStyleSheet(GLOBAL_STYLE)
 
@@ -323,17 +323,17 @@ class UIManager(QWidget):
         """)
         header.addWidget(title_label)
 
-        subtitle = QLabel("İleri Seviye Adli Bilişim Paneli — 8 Algoritma ile AI Tespit")
+        subtitle = QLabel("Ileri Seviye Adli Bilisim Paneli — 8 Algoritma ile AI Tespit")
         subtitle.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px; padding-top: 8px;")
         header.addWidget(subtitle)
         header.addStretch()
 
         main_layout.addLayout(header)
 
-        # ─── KONTROL ÇUBUĞU ─────────────────
+        # ─── KONTROL CUBUGU ─────────────────
         controls = QHBoxLayout()
 
-        self.btn_load = QPushButton("📂  Fotoğraf Yükle")
+        self.btn_load = QPushButton("📂  Fotograf Yukle")
         self.btn_load.setStyleSheet(f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -350,7 +350,7 @@ class UIManager(QWidget):
         self.btn_load.clicked.connect(self.load_image)
         controls.addWidget(self.btn_load)
 
-        self.btn_analyze = QPushButton("🧠  Analizi Başlat")
+        self.btn_analyze = QPushButton("🧠  Analizi Baslat")
         self.btn_analyze.setStyleSheet(f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -373,14 +373,14 @@ class UIManager(QWidget):
 
         # Slider
         slider_container = QVBoxLayout()
-        self.lbl_slider = QLabel("FFT Eşik (Z-Score): 15")
+        self.lbl_slider = QLabel("FFT Esik (Z-Score): 15")
         self.lbl_slider.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px;")
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(5)
         self.slider.setMaximum(60)
         self.slider.setValue(15)
         self.slider.setFixedWidth(200)
-        self.slider.valueChanged.connect(lambda v: self.lbl_slider.setText(f"FFT Eşik (Z-Score): {v}"))
+        self.slider.valueChanged.connect(lambda v: self.lbl_slider.setText(f"FFT Esik (Z-Score): {v}"))
         slider_container.addWidget(self.lbl_slider)
         slider_container.addWidget(self.slider)
         controls.addLayout(slider_container)
@@ -388,31 +388,31 @@ class UIManager(QWidget):
         controls.addStretch()
         main_layout.addLayout(controls)
 
-        # ─── ANA İÇERİK: TAB SİSTEMİ ──────
+        # ─── ANA ICERIK: TAB SISTEMI ──────
         self.tabs = QTabWidget()
         main_layout.addWidget(self.tabs, 1)
 
-        # TAB 1: Analiz Sonuçları
+        # TAB 1: Analiz Sonuclari
         self.tab_results = QWidget()
         self.init_results_tab()
-        self.tabs.addTab(self.tab_results, "📊 Analiz Sonuçları")
+        self.tabs.addTab(self.tab_results, "📊 Analiz Sonuclari")
 
-        # TAB 2: Görsel Haritalar
+        # TAB 2: Gorsel Haritalar
         self.tab_maps = QWidget()
         self.init_maps_tab()
-        self.tabs.addTab(self.tab_maps, "🗺️ Görsel Haritalar")
+        self.tabs.addTab(self.tab_maps, "🗺️ Gorsel Haritalar")
 
     def init_results_tab(self):
-        """Analiz sonuçları tab'ını oluşturur."""
+        """Analiz sonuclari tab'ini olusturur."""
         layout = QHBoxLayout(self.tab_results)
         layout.setSpacing(16)
         layout.setContentsMargins(12, 12, 12, 12)
 
-        # Sol taraf: Orijinal görsel + Gauge
+        # Sol taraf: Orijinal gorsel + Gauge
         left_panel = QVBoxLayout()
 
-        # Orijinal görsel
-        self.lbl_original = QLabel("Bir fotoğraf yükleyin")
+        # Orijinal gorsel
+        self.lbl_original = QLabel("Bir fotograf yukleyin")
         self.lbl_original.setAlignment(Qt.AlignCenter)
         self.lbl_original.setStyleSheet(f"""
             border: 2px dashed {COLORS['border']};
@@ -434,7 +434,7 @@ class UIManager(QWidget):
         gauge_container.addStretch()
         left_panel.addLayout(gauge_container)
 
-        # Sonuç açıklama
+        # Sonuc aciklama
         self.lbl_verdict_desc = QLabel("")
         self.lbl_verdict_desc.setAlignment(Qt.AlignCenter)
         self.lbl_verdict_desc.setStyleSheet(f"""
@@ -448,11 +448,11 @@ class UIManager(QWidget):
         left_panel.addStretch()
         layout.addLayout(left_panel, 4)
 
-        # Sağ taraf: Algoritma kartları + Radar
+        # Sag taraf: Algoritma kartlari + Radar
         right_panel = QVBoxLayout()
 
         # Radar chart placeholder
-        self.lbl_radar = QLabel("Radar grafiği analiz sonrası görünecek")
+        self.lbl_radar = QLabel("Radar grafigi analiz sonrasi gorunecek")
         self.lbl_radar.setAlignment(Qt.AlignCenter)
         self.lbl_radar.setStyleSheet(f"""
             border: 1px solid {COLORS['border']};
@@ -465,7 +465,7 @@ class UIManager(QWidget):
         self.lbl_radar.setMaximumHeight(320)
         right_panel.addWidget(self.lbl_radar)
 
-        # Algoritma kartları scroll alanı
+        # Algoritma kartlari scroll alani
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet(f"background: transparent;")
@@ -475,8 +475,8 @@ class UIManager(QWidget):
         self.cards_layout.setSpacing(8)
         self.cards_layout.setContentsMargins(4, 4, 4, 4)
 
-        # Başlangıçta boş kart alanı
-        placeholder = QLabel("Algoritma sonuçları analiz sonrası burada görünecek")
+        # Baslangicta bos kart alani
+        placeholder = QLabel("Algoritma sonuclari analiz sonrasi burada gorunecek")
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px; padding: 30px;")
         self.cards_layout.addWidget(placeholder)
@@ -488,15 +488,15 @@ class UIManager(QWidget):
         layout.addLayout(right_panel, 5)
 
     def init_maps_tab(self):
-        """Görsel haritalar tab'ını oluşturur."""
+        """Gorsel haritalar tab'ini olusturur."""
         layout = QVBoxLayout(self.tab_maps)
         layout.setSpacing(12)
         layout.setContentsMargins(12, 12, 12, 12)
 
-        # Harita seçici
+        # Harita secici
         top_bar = QHBoxLayout()
 
-        lbl = QLabel("Analiz Katmanı:")
+        lbl = QLabel("Analiz Katmani:")
         lbl.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: bold; font-size: 13px;")
         top_bar.addWidget(lbl)
 
@@ -510,10 +510,10 @@ class UIManager(QWidget):
 
         layout.addLayout(top_bar)
 
-        # Harita görüntüleme alanı (yan yana: orijinal + analiz)
+        # Harita goruntuleme alani (yan yana: orijinal + analiz)
         map_area = QHBoxLayout()
 
-        # Orijinal (küçük)
+        # Orijinal (kucuk)
         orig_container = QVBoxLayout()
         orig_label = QLabel("Orijinal")
         orig_label.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: bold; font-size: 12px;")
@@ -531,14 +531,14 @@ class UIManager(QWidget):
         orig_container.addWidget(self.lbl_map_original)
         map_area.addLayout(orig_container)
 
-        # Analiz haritası
+        # Analiz haritasi
         analysis_container = QVBoxLayout()
-        self.lbl_map_title = QLabel("Analiz Haritası")
+        self.lbl_map_title = QLabel("Analiz Haritasi")
         self.lbl_map_title.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: bold; font-size: 12px;")
         self.lbl_map_title.setAlignment(Qt.AlignCenter)
         analysis_container.addWidget(self.lbl_map_title)
 
-        self.lbl_map_result = QLabel("Sonuçlar burada görünecek")
+        self.lbl_map_result = QLabel("Sonuclar burada gorunecek")
         self.lbl_map_result.setAlignment(Qt.AlignCenter)
         self.lbl_map_result.setStyleSheet(f"""
             border: 1px solid {COLORS['border']};
@@ -552,12 +552,12 @@ class UIManager(QWidget):
 
         layout.addLayout(map_area, 1)
 
-    # ─── KONTROL FONKSİYONLARI ──────────────
+    # ─── KONTROL FONKSIYONLARI ──────────────
 
     def load_image(self):
         file_name, _ = QFileDialog.getOpenFileName(
-            self, "Analiz İçin Görsel Seç", "",
-            "Resim Dosyaları (*.png *.jpg *.jpeg *.bmp *.webp)"
+            self, "Analiz Icin Gorsel Sec", "",
+            "Resim Dosyalari (*.png *.jpg *.jpeg *.bmp *.webp)"
         )
         if file_name:
             self.image_path = file_name
@@ -573,27 +573,27 @@ class UIManager(QWidget):
                 background: {COLORS['bg_card']};
             """)
 
-            # Tab 2: Harita sayfasındaki orijinal
+            # Tab 2: Harita sayfasindaki orijinal
             self.lbl_map_original.setPixmap(
                 pixmap.scaled(400, 380, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
 
             # Resetle
-            self.gauge.set_score(0, "Hazır", COLORS['gradient_start'], "")
-            self.lbl_verdict_desc.setText("Analiz başlatmak için 🧠 butonuna tıklayın")
+            self.gauge.set_score(0, "Hazir", COLORS['gradient_start'], "")
+            self.lbl_verdict_desc.setText("Analiz baslatmak icin 🧠 butonuna tiklayin")
             self.combo_view.clear()
-            self.combo_view.addItem("Lütfen Analizi Başlatın")
+            self.combo_view.addItem("Lutfen Analizi Baslatin")
             self.combo_view.setEnabled(False)
             self.btn_analyze.setEnabled(True)
 
-            # Kartları temizle
+            # Kartlari temizle
             self._clear_cards()
 
     def run_analysis(self):
         if not self.image_path:
             return
 
-        # Analiz başlıyor bildirimi
+        # Analiz basliyor bildirimi
         self.gauge.set_score(0, "Analiz ediliyor...", COLORS['accent_yellow'], "⏳")
         self.btn_analyze.setEnabled(False)
         self.btn_analyze.setText("⏳ Analiz Devam Ediyor...")
@@ -602,10 +602,10 @@ class UIManager(QWidget):
         try:
             threshold = self.slider.value()
 
-            # Tüm algoritmaları çalıştır
+            # Tum algoritmalari calistir
             result = ManipulationDetector.run_full_suite(self.image_path, threshold)
 
-            # Güven skorunu hesapla
+            # Guven skorunu hesapla
             confidence_result = ConfidenceEngine.compute(
                 result["algorithm_scores"],
                 result["modifiers"]
@@ -614,7 +614,7 @@ class UIManager(QWidget):
             self.last_result = {**result, "confidence": confidence_result}
             self.current_maps = result["maps"]
 
-            # UI'ı güncelle
+            # UI'i guncelle
             self._update_gauge(confidence_result)
             self._update_cards(confidence_result, result)
             self._update_radar(result["algorithm_scores"], confidence_result)
@@ -622,15 +622,15 @@ class UIManager(QWidget):
 
         except Exception as e:
             self.gauge.set_score(0, "HATA", COLORS['accent_red'], "❌")
-            self.lbl_verdict_desc.setText(f"Analiz hatası: {str(e)}")
+            self.lbl_verdict_desc.setText(f"Analiz hatasi: {str(e)}")
             import traceback
             traceback.print_exc()
 
         finally:
             self.btn_analyze.setEnabled(True)
-            self.btn_analyze.setText("🧠  Analizi Başlat")
+            self.btn_analyze.setText("🧠  Analizi Baslat")
 
-    # ─── UI GÜNCELLEME ──────────────────────
+    # ─── UI GUNCELLEME ──────────────────────
 
     def _update_gauge(self, conf):
         self.gauge.set_score(
@@ -642,7 +642,7 @@ class UIManager(QWidget):
 
         desc = conf["description"]
         if conf.get("exif_adjustment", 0) != 0:
-            desc += f"\n(EXIF düzeltmesi: {conf['exif_adjustment']:+d} puan)"
+            desc += f"\n(EXIF duzeltmesi: {conf['exif_adjustment']:+d} puan)"
         self.lbl_verdict_desc.setText(desc)
         self.lbl_verdict_desc.setStyleSheet(f"""
             color: {conf['color']};
@@ -677,7 +677,7 @@ class UIManager(QWidget):
         self.cards_layout.addStretch()
 
     def _update_radar(self, scores, conf):
-        """Matplotlib ile radar chart çizip QLabel'e yerleştirir."""
+        """Matplotlib ile radar chart cizip QLabel'e yerlestirir."""
         display_names = ConfidenceEngine.get_algo_display_names()
 
         labels = []
@@ -695,7 +695,7 @@ class UIManager(QWidget):
         fig.patch.set_facecolor(COLORS['bg_card'])
         ax.set_facecolor(COLORS['bg_card'])
 
-        # Radar çizimi
+        # Radar cizimi
         ax.fill(angles, values_plot, color=conf['color'], alpha=0.15)
         ax.plot(angles, values_plot, color=conf['color'], linewidth=2, marker='o', markersize=4)
 
@@ -726,7 +726,7 @@ class UIManager(QWidget):
         self.change_view()
 
     def change_view(self):
-        """Harita seçimi değiştiğinde."""
+        """Harita secimi degistiginde."""
         selected = self.combo_view.currentText()
         if selected in self.current_maps:
             img_data = self.current_maps[selected]
@@ -734,7 +734,7 @@ class UIManager(QWidget):
 
             if len(img_data.shape) == 2:
                 h, w = img_data.shape
-                # Renkli ısı haritası oluştur
+                # Renkli isi haritasi olustur
                 colored = cv2.applyColorMap(img_data, cv2.COLORMAP_JET)
                 colored_rgb = cv2.cvtColor(colored, cv2.COLOR_BGR2RGB)
                 q_img = QImage(colored_rgb.data, w, h, w * 3, QImage.Format_RGB888)
@@ -749,7 +749,7 @@ class UIManager(QWidget):
 
     @staticmethod
     def _fig_to_pixmap(fig):
-        """Matplotlib figure'ü QPixmap'e çevirir."""
+        """Matplotlib figure'u QPixmap'e cevirir."""
         canvas = FigureCanvasAgg(fig)
         canvas.draw()
         buf = canvas.buffer_rgba()
@@ -759,5 +759,5 @@ class UIManager(QWidget):
         return QPixmap.fromImage(q_img)
 
 
-# OpenCV import (change_view'de kullanılıyor)
+# OpenCV import (change_view'de kullaniliyor)
 import cv2

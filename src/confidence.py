@@ -1,27 +1,27 @@
 """
-VerifAI — Ağırlıklı Ensemble Güven Skoru Motoru
-Her algoritmadan gelen 0-100 puanı ağırlıkları ile birleştirerek tek bir "Güven Skoru" üretir.
+VerifAI — Agirlikli Ensemble Guven Skoru Motoru
+Her algoritmadan gelen 0-100 puani agirliklari ile birlestirerek tek bir "Guven Skoru" uretir.
 """
 
 
 class ConfidenceEngine:
     """
-    Ağırlıklı ensemble güven skoru hesaplayıcı.
-    Her algoritma 0-100 arası bir AI olasılık puanı üretir.
-    Bu puanlar ağırlıklarla çarpılıp toplam güven skoru elde edilir.
+    Agirlikli ensemble guven skoru hesaplayici.
+    Her algoritma 0-100 arasi bir AI olasilik puani uretir.
+    Bu puanlar agirliklarla carpilip toplam guven skoru elde edilir.
 
-    Skor Aralıkları:
-        0-25   → 🟢 GERÇEK
-        25-45  → 🔵 MUHTEMELEN GERÇEK
-        45-65  → 🟡 BELİRSİZ
-        65-85  → 🟠 ŞÜPHELİ
-        85-100 → 🔴 AI ÜRETİMİ
+    Skor Araliklari:
+        0-25   → 🟢 GERCEK
+        25-45  → 🔵 MUHTEMELEN GERCEK
+        45-65  → 🟡 BELIRSIZ
+        65-85  → 🟠 SUPHELI
+        85-100 → 🔴 AI URETIMI
     """
 
-    # Kalibrasyon sonuçlarına göre yeni algoritmalarla güncellenmiş ağırlıklar:
-    #   - noise (Bilateral Filter ile daha güvenilir)
-    #   - color_stats (YCbCr krominans varyansı eklendi)
-    #   - wavelet (db2 ile doğal görüntü modellemesi)
+    # Kalibrasyon sonuclarina gore yeni algoritmalarla guncellenmis agirliklar:
+    #   - noise (Bilateral Filter ile daha guvenilir)
+    #   - color_stats (YCbCr krominans varyansi eklendi)
+    #   - wavelet (db2 ile dogal goruntu modellemesi)
     WEIGHTS = {
         "metadata":         0.03,
         "noise":            0.18,
@@ -35,31 +35,31 @@ class ConfidenceEngine:
         "lbp_texture":      0.10,
     }
 
-    # Skor → Karar eşleme tablosu
+    # Skor → Karar esleme tablosu
     VERDICT_TABLE = [
-        (25,  "GERÇEK",             "Yüksek güvenle gerçek fotoğraf.",                       "#2ecc71", "🟢"),
-        (45,  "MUHTEMELEN GERÇEK",  "Algoritmalar düşük risk tespit etti.",                   "#3498db", "🔵"),
-        (65,  "BELİRSİZ",          "Karışık sinyaller — bazı algoritmalar şüpheli buldu.",    "#f1c40f", "🟡"),
-        (85,  "ŞÜPHELİ",          "Birden fazla algoritma AI izleri tespit etti.",           "#e67e22", "🟠"),
-        (101, "AI ÜRETİMİ",        "Çok güçlü yapay üretim sinyalleri.",                     "#e74c3c", "🔴"),
+        (25,  "GERCEK",             "Yuksek guvenle gercek fotograf.",                       "#2ecc71", "🟢"),
+        (45,  "MUHTEMELEN GERCEK",  "Algoritmalar dusuk risk tespit etti.",                   "#3498db", "🔵"),
+        (65,  "BELIRSIZ",          "Karisik sinyaller — bazi algoritmalar supheli buldu.",    "#f1c40f", "🟡"),
+        (85,  "SUPHELI",          "Birden fazla algoritma AI izleri tespit etti.",           "#e67e22", "🟠"),
+        (101, "AI URETIMI",        "Cok guclu yapay uretim sinyalleri.",                     "#e74c3c", "🔴"),
     ]
 
     @classmethod
     def compute(cls, algorithm_scores: dict, modifiers: dict = None) -> dict:
         """
-        Ana güven skoru hesaplama.
+        Ana guven skoru hesaplama.
 
         Args:
-            algorithm_scores: dict — Her algoritmanın adı ve 0-100 puanı
-                Örnek: {"noise": 85, "ela": 40, "dct": 92, ...}
-            modifiers: dict — Ek düzeltme faktörleri
-                - has_exif (bool): EXIF varsa skor düşürülür
-                - is_social_washed (bool): Sosyal medya sıkıştırması varsa
-                    gürültü bazlı algoritmalar dikkate alınmaz
-                - is_recaptured (bool): Ekrandan çekim tespiti
+            algorithm_scores: dict — Her algoritmanin adi ve 0-100 puani
+                Ornek: {"noise": 85, "ela": 40, "dct": 92, ...}
+            modifiers: dict — Ek duzeltme faktorleri
+                - has_exif (bool): EXIF varsa skor dusurulur
+                - is_social_washed (bool): Sosyal medya sikistirmasi varsa
+                    gurultu bazli algoritmalar dikkate alinmaz
+                - is_recaptured (bool): Ekrandan cekim tespiti
 
         Returns:
-            dict: Detaylı sonuç
+            dict: Detayli sonuc
         """
         if modifiers is None:
             modifiers = {}
@@ -69,18 +69,18 @@ class ConfidenceEngine:
         is_social_washed = modifiers.get("is_social_washed", False)
         is_recaptured = modifiers.get("is_recaptured", False)
 
-        # Filtrelenecek algoritmalar (sosyal medya sıkıştırmasında)
+        # Filtrelenecek algoritmalar (sosyal medya sikistirmasinda)
         suppressed = set()
         if is_social_washed:
             suppressed = {"noise", "ela"}
 
-        # Ağırlıklı toplam
+        # Agirlikli toplam
         weighted_sum = 0.0
         total_weight = 0.0
         per_algo_details = []
 
         for algo_name, weight in cls.WEIGHTS.items():
-            score = algorithm_scores.get(algo_name, 50)  # varsayılan: belirsiz
+            score = algorithm_scores.get(algo_name, 50)  # varsayilan: belirsiz
 
             if algo_name in suppressed:
                 per_algo_details.append({
@@ -88,7 +88,7 @@ class ConfidenceEngine:
                     "score": score,
                     "weight": weight,
                     "active": False,
-                    "reason": "Sosyal medya sıkıştırması nedeniyle devre dışı"
+                    "reason": "Sosyal medya sikistirmasi nedeniyle devre disi"
                 })
                 continue
 
@@ -102,66 +102,106 @@ class ConfidenceEngine:
                 "reason": ""
             })
 
-        # ── AKILLI GERÇEKLİK KALKANI ──
-        # Problem: Ön kameralar beauty mode, JPEG sıkıştırma ve noise reduction
-        # uyguladığından pürüzsüzlük algoritmaları (wavelet, glcm, edge) yanlış alarm verir.
-        # Çözüm: Gerçekliği kesinleştiren algoritmalar (noise, ela, fft, dct) düşük çıkıyorsa,
-        # bu fotoğrafın gerçek olduğunu kabul et ve pürüzsüzlük algoritmalarını baskıla.
+        # ── AKILLI GERCEKLIK KALKANI ──
+        # Problem: On kameralar beauty mode, JPEG sikistirma ve noise reduction
+        # uyguladigindan puruzsuzluk algoritmalari (wavelet, glcm, edge) yanlis alarm verir.
+        # Cozum: Gercekligi kesinlestiren algoritmalar (noise, ela, fft, dct) dusuk cikiyorsa,
+        # bu fotografin gercek oldugunu kabul et ve puruzsuzluk algoritmalarini baskila.
         
-        # Gerçekliği kesinleştiren algoritmaları say
-        # Bu algoritmalar pürüzsüzlükten BAĞIMSIZDIR ve AI'dan kesin olarak ayrışır
+        # Gercekligi kesinlestiren algoritmalari say
+        # Bu algoritmalar puruzsuzlukten BAGIMSIZDIR ve AI'dan kesin olarak ayrisir
         reality_signals = ["noise", "ela", "fft", "dct"]
         reality_count = sum(1 for name in reality_signals 
                           if algorithm_scores.get(name, 50) <= 30)
         
         is_real_camera = has_exif and metadata_score < 20
         lbp_score = algorithm_scores.get("lbp_texture", 50)
+        dct_score = algorithm_scores.get("dct", 50)
+        noise_score = algorithm_scores.get("noise", 50)
+        ela_score = algorithm_scores.get("ela", 50)
+        fft_score = algorithm_scores.get("fft", 50)
+        forensic_real_anchor = ela_score <= 20 and fft_score <= 20
+
+        # Texture algoritmalari (noise/wavelet/glcm/edge/lbp) tekrarlayan gercek
+        # dokularda yukselebilir: kumas, karbon fiber, sac/tuy, yaprak, devre karti,
+        # baskili yazi vb. Bu guard sadece ELA/FFT ve DCT gibi adli ankrajlar
+        # guclu AI demiyorsa calisir.
+        texture_false_positive_guard = (
+            forensic_real_anchor and
+            dct_score <= 55 and
+            (noise_score <= 45 or lbp_score <= 75 or dct_score <= 35)
+        )
+
+        # Genis, pürüzsüz ve dusuk detayli gercek fotograflarda noise/wavelet/color
+        # yanlis yukselebilir. LBP ve DCT ayni anda gercek diyorsa noise da baskilanabilir.
+        smooth_capture_guard = (
+            forensic_real_anchor and
+            dct_score <= 35 and
+            lbp_score <= 35 and
+            noise_score >= 65
+        )
         
-        # AI VETO: Eğer LBP kesin AI gösteriyorsa veya güçlü bir AI sinyali varsa
-        # kalkan ASLA devreye girmemeli. Bu, AI fotoğraflarının yanlışlıkla korunmasını engeller.
+        # AI VETO: Eger LBP/DCT birlikte guclu AI gosteriyorsa veya birden fazla
+        # bagimsiz guclu AI sinyali varsa kalkan ASLA devreye girmemeli.
         ai_veto_algos = ["dct", "color_stats", "lbp_texture", "noise"]
         strong_ai_signals = sum(1 for name in ai_veto_algos 
                                if algorithm_scores.get(name, 50) >= 65)
-        ai_veto = lbp_score >= 60 or strong_ai_signals >= 2
+        ai_veto = (
+            (lbp_score >= 90 and dct_score >= 60) or
+            (strong_ai_signals >= 2 and not texture_false_positive_guard and not smooth_capture_guard)
+        )
         
-        # Kalkan aktifleşme koşulları:
-        # 1. EXIF gerçek donanım izi gösteriyor (AI veto yok ise)
-        # 2. 3+ bağımsız algoritma "gerçek" diyor VE AI veto yok
-        # 3. LBP düşük VE en az 2 gerçeklik sinyali var
+        # Kalkan aktiflesme kosullari:
+        # 1. EXIF gercek donanim izi gosteriyor (AI veto yok ise)
+        # 2. 3+ bagimsiz algoritma "gercek" diyor VE AI veto yok
+        # 3. LBP dusuk VE en az 2 gerceklik sinyali var
         beauty_shield_active = not ai_veto and (
             is_real_camera or 
             reality_count >= 3 or
+            texture_false_positive_guard or
+            smooth_capture_guard or
             (lbp_score <= 40 and reality_count >= 2)
         )
         
         if beauty_shield_active:
-            # Pürüzsüzlükten etkilenen algoritmaları baskıla
+            # Puruzsuzlukten etkilenen algoritmalari baskila
             shield_targets = {"wavelet", "glcm_texture", "edge_consistency", "color_stats"}
+            if texture_false_positive_guard:
+                shield_targets.add("lbp_texture")
+            if smooth_capture_guard:
+                shield_targets.add("noise")
             for d in per_algo_details:
                 if d["name"] in shield_targets and d["score"] > 30:
-                    d["score"] = d["score"] * 0.3  # %70 baskıla
-                    d["reason"] = "Gerçeklik Kalkanı aktif (" + str(reality_count) + " sinyal)"
+                    d["score"] = d["score"] * 0.3  # %70 baskila
+                    shield_count = max(
+                        reality_count,
+                        2 if texture_false_positive_guard or smooth_capture_guard else 0
+                    )
+                    d["reason"] = "Gerceklik Kalkani aktif (" + str(shield_count) + " sinyal)"
             
-            # Weighted sum'ı yeni skorlarla tekrar hesapla
+            # Weighted sum'i yeni skorlarla tekrar hesapla
             weighted_sum = sum(d["score"] * d["weight"] for d in per_algo_details if d["active"])
 
-        # Normalize (devre dışı algoritmalar çıkarıldıysa)
+        # Normalize (devre disi algoritmalar cikarildiysa)
         if total_weight > 0:
             raw_score = weighted_sum / total_weight
         else:
             raw_score = 50.0
 
-        # ── KONSENSÜS BONUSU ──
-        # Bireysel puanlar orta olsa bile, çoğunluk "AI" diyorsa skoru yükselt
-        # Çoğunluk "gerçek" diyorsa skoru düşür
-        # ÖNEMLİ: Gerçek kamera doğrulanmışsa veya kalkan aktifse konsensüs bonusları UYGULANMAZ
-        active_scores = [a["score"] for a in per_algo_details if a["active"]]
-        if active_scores and not beauty_shield_active:
-            high_count = sum(1 for s in active_scores if s >= 60)
-            low_count = sum(1 for s in active_scores if s <= 25)
-            total_active = len(active_scores)
+        # ── KONSENSUS BONUSU ──
+        # Bireysel puanlar orta olsa bile, cogunluk "AI" diyorsa skoru yukselt
+        # Cogunluk "gercek" diyorsa skoru dusur
+        # ONEMLI: Gercek kamera dogrulanmissa veya kalkan aktifse konsensus bonuslari UYGULANMAZ
+        consensus_scores = [
+            a["score"] for a in per_algo_details
+            if a["active"] and a["name"] != "metadata"
+        ]
+        forensic_combo_bonus = 0
+        if consensus_scores and not beauty_shield_active:
+            high_count = sum(1 for s in consensus_scores if s >= 60)
+            low_count = sum(1 for s in consensus_scores if s <= 25)
 
-            # 5+ algoritma "AI" diyorsa → güçlü konsensüs bonusu
+            # 5+ algoritma "AI" diyorsa → guclu konsensus bonusu
             if high_count >= 5:
                 raw_score += 20
             elif high_count >= 4:
@@ -169,8 +209,8 @@ class ConfidenceEngine:
             elif high_count >= 3:
                 raw_score += 6
 
-            # Kesin AI sinyalleri yakalandıysa ekstra bonus
-            strong_ai_count = sum(1 for s in active_scores if s >= 80)
+            # Kesin AI sinyalleri yakalandiysa ekstra bonus
+            strong_ai_count = sum(1 for s in consensus_scores if s >= 80)
             if strong_ai_count >= 3:
                 raw_score += 18
             elif strong_ai_count >= 2:
@@ -178,7 +218,7 @@ class ConfidenceEngine:
             elif strong_ai_count >= 1:
                 raw_score += 5
 
-            # Güçlü "Gerçek" konsensüsü
+            # Guclu "Gercek" konsensusu
             if high_count < 2 and strong_ai_count == 0:
                 if low_count >= 5:
                     raw_score -= 18
@@ -187,30 +227,46 @@ class ConfidenceEngine:
                 elif low_count >= 3:
                     raw_score -= 5
 
-        # EXIF bonusu: Gerçek kamera verisi varsa skoru ciddi düşür
+            missing_camera_trace = (not has_exif) or metadata_score >= 55
+            if lbp_score >= 90 and dct_score >= 65:
+                forensic_combo_bonus = 14 if missing_camera_trace else 9
+            elif lbp_score >= 80 and dct_score >= 60:
+                forensic_combo_bonus = 8 if missing_camera_trace else 5
+            raw_score += forensic_combo_bonus
+
+        # EXIF bonusu: Gercek kamera verisi varsa skoru ciddi dusur
         exif_adjustment = 0
         if is_real_camera and raw_score >= 20:
             exif_adjustment = -35
             raw_score = max(0, raw_score + exif_adjustment)
 
-        # Ekran çekimi ayrı sınıf
+        # Ekran cekimi ayri sinif
         if is_recaptured:
             return {
                 "final_score": round(raw_score, 1),
-                "verdict": "EKRANDAN ÇEKİM",
-                "description": "FFT analizi ekran (Moiré) ızgarası tespit etti. "
-                               "Bu görsel bir ekrandan fotoğraflanmış olabilir.",
+                "verdict": "EKRANDAN CEKIM",
+                "description": "FFT analizi ekran (Moiré) izgarasi tespit etti. "
+                               "Bu gorsel bir ekrandan fotograflanmis olabilir.",
                 "color": "#8e44ad",
                 "emoji": "🟣",
                 "exif_adjustment": exif_adjustment,
+                "forensic_combo_bonus": forensic_combo_bonus,
+                "texture_false_positive_guard": texture_false_positive_guard,
+                "smooth_capture_guard": smooth_capture_guard,
                 "per_algorithm": per_algo_details,
             }
 
-        # Final skoru sınırla
-        final_score = max(0, min(100, round(raw_score, 1)))
+        # ── SKOR ESNETME (S-CURVE / POLARIZATION) ──
+        # 50'nin ustunu 100'e, 50'nin altini 0'a yaklastirir. (Ornek: 70 -> ~78.4)
+        raw_score = max(0.0, min(100.0, raw_score))
+        x = raw_score / 100.0
+        stretched_score = (3 * (x ** 2) - 2 * (x ** 3)) * 100.0
+        
+        # Final skoru sinirla
+        final_score = max(0, min(100, round(stretched_score, 1)))
 
-        # Karar tablosundan uygun kararı bul
-        verdict = "BELİRSİZ"
+        # Karar tablosundan uygun karari bul
+        verdict = "BELIRSIZ"
         description = ""
         color = "#f1c40f"
         emoji = "🟡"
@@ -229,37 +285,40 @@ class ConfidenceEngine:
             "color": color,
             "emoji": emoji,
             "exif_adjustment": exif_adjustment,
+            "forensic_combo_bonus": forensic_combo_bonus,
+            "texture_false_positive_guard": texture_false_positive_guard,
+            "smooth_capture_guard": smooth_capture_guard,
             "per_algorithm": per_algo_details,
         }
 
     @classmethod
     def get_algo_display_names(cls) -> dict:
-        """UI'da gösterilecek anlaşılır algoritma isimleri."""
+        """UI'da gosterilecek anlasilir algoritma isimleri."""
         return {
             "metadata":         "EXIF / Metadata",
-            "noise":            "Gürültü Residual",
-            "ela":              "Akıllı ELA",
+            "noise":            "Gurultu Residual",
+            "ela":              "Akilli ELA",
             "fft":              "FFT Frekans",
             "dct":              "DCT Spektrum",
             "wavelet":          "Wavelet Alt-Bant",
-            "color_stats":      "Renk İstatistik",
+            "color_stats":      "Renk Istatistik",
             "glcm_texture":     "GLCM Doku",
-            "edge_consistency": "Kenar Tutarlılık",
+            "edge_consistency": "Kenar Tutarlilik",
             "lbp_texture":      "LBP Mikro-Doku",
         }
 
     @classmethod
     def get_algo_descriptions(cls) -> dict:
-        """Her algoritmanın kısa açıklaması."""
+        """Her algoritmanin kisa aciklamasi."""
         return {
-            "metadata":         "EXIF verilerinde kamera/donanım izi arar. Yoksa şüphe puanı artar.",
-            "noise":            "Sensör gürültü kalıntılarını analiz eder. AI görsellerde gürültü çok pürüzsüz olur.",
-            "ela":              "JPEG sıkıştırma sonrası hata seviyesini analiz eder. Montaj ve yapay alanları yakalar.",
+            "metadata":         "EXIF verilerinde kamera/donanim izi arar. Yoksa suphe puani artar.",
+            "noise":            "Duz alan sensor gurultusunu analiz eder; sahne dokusunu gurultuden ayirmaya calisir.",
+            "ela":              "JPEG sikistirma sonrasi hata seviyesini analiz eder. Montaj ve yapay alanlari yakalar.",
             "fft":              "Frekans spektrumunda periyodik paternler ve Moiré izleri arar.",
-            "dct":              "DCT katsayı dağılımını analiz eder. AI'ın doğal olmayan frekans profili tespit edilir.",
-            "wavelet":          "Çoklu çözünürlükte frekans analizi. HH bandındaki enerji eksikliği AI işaretidir.",
-            "color_stats":      "Renk kanalları arası korelasyon ve histogram entropisi analiz eder.",
-            "glcm_texture":     "Mikro-doku tutarsızlıklarını GLCM matrisi ile tespit eder.",
-            "edge_consistency": "Kenar keskinliği ve tutarlılığını analiz eder. AI kenarları genellikle çok düzgündür.",
-            "lbp_texture":      "Local Binary Pattern (LBP) histogramı ile piksel seviyesindeki doğal olmayan tekdüzeliği tespit eder.",
+            "dct":              "DCT katsayi dagilimini analiz eder. AI'in dogal olmayan frekans profili tespit edilir.",
+            "wavelet":          "Coklu cozunurlukte frekans analizi; asiri puruzsuzluk ve sentetik yogun detayi yakalar.",
+            "color_stats":      "Renk kanallari arasi korelasyon ve histogram entropisi analiz eder.",
+            "glcm_texture":     "Mikro-doku tutarsizliklarini GLCM matrisi ile tespit eder.",
+            "edge_consistency": "Kenar keskinligi ve tutarliligini analiz eder. AI kenarlari genellikle cok duzgundur.",
+            "lbp_texture":      "Local Binary Pattern (LBP) histogrami ile piksel seviyesindeki dogal olmayan tekduzeligi tespit eder.",
         }
