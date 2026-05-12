@@ -68,11 +68,11 @@ class ConfidenceEngine:
         metadata_score = modifiers.get("metadata_score", 50)
         is_social_washed = modifiers.get("is_social_washed", False)
         is_recaptured = modifiers.get("is_recaptured", False)
+        ai_watermark_detected = modifiers.get("ai_watermark_detected", False)
 
-        # Filtrelenecek algoritmalar (sosyal medya sikistirmasinda)
+        # Yeniden sikistirma sinyali karar asamasinda guard olarak kullanilir.
+        # Algoritmalari bastan kapatmak yerine baglam icinde agirliklarini dusuruyoruz.
         suppressed = set()
-        if is_social_washed:
-            suppressed = {"noise", "ela"}
 
         # Agirlikli toplam
         weighted_sum = 0.0
@@ -121,6 +121,12 @@ class ConfidenceEngine:
         ela_score = algorithm_scores.get("ela", 50)
         fft_score = algorithm_scores.get("fft", 50)
         forensic_real_anchor = ela_score <= 20 and fft_score <= 20
+        compression_artifact_guard = (
+            is_social_washed and
+            not ai_watermark_detected and
+            forensic_real_anchor and
+            dct_score <= 85
+        )
 
         # Texture algoritmalari (noise/wavelet/glcm/edge/lbp) tekrarlayan gercek
         # dokularda yukselebilir: kumas, karbon fiber, sac/tuy, yaprak, devre karti,
@@ -128,8 +134,13 @@ class ConfidenceEngine:
         # guclu AI demiyorsa calisir.
         texture_false_positive_guard = (
             forensic_real_anchor and
-            dct_score <= 55 and
-            (noise_score <= 45 or lbp_score <= 75 or dct_score <= 35)
+            (
+                compression_artifact_guard or
+                (
+                    dct_score <= 55 and
+                    (noise_score <= 45 or lbp_score <= 75 or dct_score <= 35)
+                )
+            )
         )
 
         # Genis, pürüzsüz ve dusuk detayli gercek fotograflarda noise/wavelet/color
@@ -147,7 +158,8 @@ class ConfidenceEngine:
         strong_ai_signals = sum(1 for name in ai_veto_algos 
                                if algorithm_scores.get(name, 50) >= 65)
         ai_veto = (
-            (lbp_score >= 90 and dct_score >= 60) or
+            ai_watermark_detected or
+            (lbp_score >= 90 and dct_score >= 60 and not compression_artifact_guard) or
             (strong_ai_signals >= 2 and not texture_false_positive_guard and not smooth_capture_guard)
         )
         
@@ -159,6 +171,7 @@ class ConfidenceEngine:
             is_real_camera or 
             reality_count >= 3 or
             texture_false_positive_guard or
+            compression_artifact_guard or
             smooth_capture_guard or
             (lbp_score <= 40 and reality_count >= 2)
         )
@@ -168,6 +181,8 @@ class ConfidenceEngine:
             shield_targets = {"wavelet", "glcm_texture", "edge_consistency", "color_stats"}
             if texture_false_positive_guard:
                 shield_targets.add("lbp_texture")
+            if compression_artifact_guard:
+                shield_targets.add("dct")
             if smooth_capture_guard:
                 shield_targets.add("noise")
             for d in per_algo_details:
@@ -175,7 +190,7 @@ class ConfidenceEngine:
                     d["score"] = d["score"] * 0.3  # %70 baskila
                     shield_count = max(
                         reality_count,
-                        2 if texture_false_positive_guard or smooth_capture_guard else 0
+                        2 if texture_false_positive_guard or compression_artifact_guard or smooth_capture_guard else 0
                     )
                     d["reason"] = "Gerceklik Kalkani aktif (" + str(shield_count) + " sinyal)"
             
@@ -232,6 +247,8 @@ class ConfidenceEngine:
                 forensic_combo_bonus = 14 if missing_camera_trace else 9
             elif lbp_score >= 80 and dct_score >= 60:
                 forensic_combo_bonus = 8 if missing_camera_trace else 5
+            if ai_watermark_detected:
+                forensic_combo_bonus = max(forensic_combo_bonus, 35)
             raw_score += forensic_combo_bonus
 
         # EXIF bonusu: Gercek kamera verisi varsa skoru ciddi dusur
@@ -251,7 +268,9 @@ class ConfidenceEngine:
                 "emoji": "🟣",
                 "exif_adjustment": exif_adjustment,
                 "forensic_combo_bonus": forensic_combo_bonus,
+                "ai_watermark_detected": ai_watermark_detected,
                 "texture_false_positive_guard": texture_false_positive_guard,
+                "compression_artifact_guard": compression_artifact_guard,
                 "smooth_capture_guard": smooth_capture_guard,
                 "per_algorithm": per_algo_details,
             }
@@ -286,7 +305,9 @@ class ConfidenceEngine:
             "emoji": emoji,
             "exif_adjustment": exif_adjustment,
             "forensic_combo_bonus": forensic_combo_bonus,
+            "ai_watermark_detected": ai_watermark_detected,
             "texture_false_positive_guard": texture_false_positive_guard,
+            "compression_artifact_guard": compression_artifact_guard,
             "smooth_capture_guard": smooth_capture_guard,
             "per_algorithm": per_algo_details,
         }

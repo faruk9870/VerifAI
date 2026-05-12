@@ -109,6 +109,7 @@ class ManipulationDetector:
         modifiers = {
             "has_exif": has_exif,
             "metadata_score": metadata_score,
+            "ai_watermark_detected": metadata_score >= 95,
             "is_social_washed": is_washed,
             "is_recaptured": is_recaptured,
         }
