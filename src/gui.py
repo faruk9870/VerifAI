@@ -1,5 +1,5 @@
 """
-VerifAI — Ileri Seviye Adli Bilisim Arayuzu
+VerifAI — AI Gorsel Tespit Sistemi
 Guven skoru gostergesi, radar grafigi, algoritma detaylari ve harita goruntuleyici.
 """
 
@@ -27,20 +27,20 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 # RENK PALETI
 # ─────────────────────────────────────────────
 COLORS = {
-    "bg_dark":       "#0d1117",
-    "bg_card":       "#161b22",
-    "bg_card_hover": "#1c2333",
-    "border":        "#30363d",
-    "text_primary":  "#e6edf3",
-    "text_secondary":"#8b949e",
-    "accent_green":  "#2ecc71",
-    "accent_blue":   "#3498db",
-    "accent_yellow": "#f1c40f",
-    "accent_orange": "#e67e22",
-    "accent_red":    "#e74c3c",
-    "accent_purple": "#8e44ad",
-    "gradient_start":"#667eea",
-    "gradient_end":  "#764ba2",
+    "bg_dark":       "#ffffff",
+    "bg_card":       "#f8f9fc",
+    "bg_card_hover": "#eef1f8",
+    "border":        "#e2e6ef",
+    "text_primary":  "#1a1d2e",
+    "text_secondary":"#6b7280",
+    "accent_green":  "#10b981",
+    "accent_blue":   "#3b82f6",
+    "accent_yellow": "#f59e0b",
+    "accent_orange": "#f97316",
+    "accent_red":    "#ef4444",
+    "accent_purple": "#8b5cf6",
+    "gradient_start":"#6366f1",
+    "gradient_end":  "#8b5cf6",
 }
 
 GLOBAL_STYLE = f"""
@@ -65,7 +65,7 @@ GLOBAL_STYLE = f"""
         font-size: 13px;
     }}
     QTabBar::tab:selected {{
-        background: {COLORS['gradient_start']};
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {COLORS['gradient_start']}, stop:1 {COLORS['gradient_end']});
         color: white;
     }}
     QTabBar::tab:hover {{
@@ -274,7 +274,7 @@ class AlgorithmCard(QFrame):
         layout.addWidget(lbl_desc)
 
         if not active:
-            inactive_lbl = QLabel("⏸ Devre disi (Sosyal medya sikistirmasi)")
+            inactive_lbl = QLabel("⏸ Devre dışı (Sosyal medya sıkıştırması)")
             inactive_lbl.setStyleSheet(f"color: {COLORS['accent_orange']}; font-size: 10px; font-style: italic; border: none;")
             layout.addWidget(inactive_lbl)
 
@@ -303,7 +303,7 @@ class UIManager(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("VerifAI — Ileri Seviye AI Tespit Sistemi")
+        self.setWindowTitle("VerifAI — AI Gorsel Tespit Sistemi")
         self.resize(1280, 850)
         self.setStyleSheet(GLOBAL_STYLE)
 
@@ -316,15 +316,15 @@ class UIManager(QWidget):
 
         title_label = QLabel("🔬 VerifAI")
         title_label.setStyleSheet(f"""
-            font-size: 26px;
+            font-size: 28px;
             font-weight: bold;
             color: {COLORS['gradient_start']};
             padding: 4px;
         """)
         header.addWidget(title_label)
 
-        subtitle = QLabel("Ileri Seviye Adli Bilisim Paneli — 8 Algoritma ile AI Tespit")
-        subtitle.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px; padding-top: 8px;")
+        subtitle = QLabel("AI Gorsel Tespit Sistemi")
+        subtitle.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 13px; padding-top: 10px; font-weight: 500;")
         header.addWidget(subtitle)
         header.addStretch()
 
@@ -333,7 +333,7 @@ class UIManager(QWidget):
         # ─── KONTROL CUBUGU ─────────────────
         controls = QHBoxLayout()
 
-        self.btn_load = QPushButton("📂  Fotograf Yukle")
+        self.btn_load = QPushButton("📂  Fotoğraf Yükle")
         self.btn_load.setStyleSheet(f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -350,7 +350,7 @@ class UIManager(QWidget):
         self.btn_load.clicked.connect(self.load_image)
         controls.addWidget(self.btn_load)
 
-        self.btn_analyze = QPushButton("🧠  Analizi Baslat")
+        self.btn_analyze = QPushButton("🧠  Analizi Başlat")
         self.btn_analyze.setStyleSheet(f"""
             QPushButton {{
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
@@ -371,19 +371,8 @@ class UIManager(QWidget):
         self.btn_analyze.setEnabled(False)
         controls.addWidget(self.btn_analyze)
 
-        # Slider
-        slider_container = QVBoxLayout()
-        self.lbl_slider = QLabel("FFT Esik (Z-Score): 15")
-        self.lbl_slider.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 11px;")
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMinimum(5)
-        self.slider.setMaximum(60)
-        self.slider.setValue(15)
-        self.slider.setFixedWidth(200)
-        self.slider.valueChanged.connect(lambda v: self.lbl_slider.setText(f"FFT Esik (Z-Score): {v}"))
-        slider_container.addWidget(self.lbl_slider)
-        slider_container.addWidget(self.slider)
-        controls.addLayout(slider_container)
+        # FFT esik degeri varsayilan olarak 15 kullanilir
+        self.slider = type('obj', (object,), {'value': lambda self: 15})()
 
         controls.addStretch()
         main_layout.addLayout(controls)
@@ -395,12 +384,12 @@ class UIManager(QWidget):
         # TAB 1: Analiz Sonuclari
         self.tab_results = QWidget()
         self.init_results_tab()
-        self.tabs.addTab(self.tab_results, "📊 Analiz Sonuclari")
+        self.tabs.addTab(self.tab_results, "📊 Analiz Sonuçları")
 
         # TAB 2: Gorsel Haritalar
         self.tab_maps = QWidget()
         self.init_maps_tab()
-        self.tabs.addTab(self.tab_maps, "🗺️ Gorsel Haritalar")
+        self.tabs.addTab(self.tab_maps, "🗺️ Görsel Haritalar")
 
     def init_results_tab(self):
         """Analiz sonuclari tab'ini olusturur."""
@@ -412,7 +401,7 @@ class UIManager(QWidget):
         left_panel = QVBoxLayout()
 
         # Orijinal gorsel
-        self.lbl_original = QLabel("Bir fotograf yukleyin")
+        self.lbl_original = QLabel("Bir fotoğraf yükleyin")
         self.lbl_original.setAlignment(Qt.AlignCenter)
         self.lbl_original.setStyleSheet(f"""
             border: 2px dashed {COLORS['border']};
@@ -420,9 +409,9 @@ class UIManager(QWidget):
             background: {COLORS['bg_card']};
             color: {COLORS['text_secondary']};
             font-size: 14px;
-            min-height: 300px;
+            min-height: 400px;
         """)
-        self.lbl_original.setMinimumSize(420, 320)
+        self.lbl_original.setMinimumSize(520, 420)
         left_panel.addWidget(self.lbl_original)
 
         # Gauge
@@ -452,7 +441,7 @@ class UIManager(QWidget):
         right_panel = QVBoxLayout()
 
         # Radar chart placeholder
-        self.lbl_radar = QLabel("Radar grafigi analiz sonrasi gorunecek")
+        self.lbl_radar = QLabel("Radar grafiği analiz sonrası görünecek")
         self.lbl_radar.setAlignment(Qt.AlignCenter)
         self.lbl_radar.setStyleSheet(f"""
             border: 1px solid {COLORS['border']};
@@ -476,7 +465,7 @@ class UIManager(QWidget):
         self.cards_layout.setContentsMargins(4, 4, 4, 4)
 
         # Baslangicta bos kart alani
-        placeholder = QLabel("Algoritma sonuclari analiz sonrasi burada gorunecek")
+        placeholder = QLabel("Algoritma sonuçları analiz sonrası burada görünecek")
         placeholder.setAlignment(Qt.AlignCenter)
         placeholder.setStyleSheet(f"color: {COLORS['text_secondary']}; font-size: 12px; padding: 30px;")
         self.cards_layout.addWidget(placeholder)
@@ -496,7 +485,7 @@ class UIManager(QWidget):
         # Harita secici
         top_bar = QHBoxLayout()
 
-        lbl = QLabel("Analiz Katmani:")
+        lbl = QLabel("Analiz Katmanı:")
         lbl.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: bold; font-size: 13px;")
         top_bar.addWidget(lbl)
 
@@ -527,18 +516,18 @@ class UIManager(QWidget):
             border-radius: 8px;
             background: {COLORS['bg_card']};
         """)
-        self.lbl_map_original.setMinimumSize(400, 380)
+        self.lbl_map_original.setMinimumSize(550, 480)
         orig_container.addWidget(self.lbl_map_original)
         map_area.addLayout(orig_container)
 
         # Analiz haritasi
         analysis_container = QVBoxLayout()
-        self.lbl_map_title = QLabel("Analiz Haritasi")
+        self.lbl_map_title = QLabel("Analiz Haritası")
         self.lbl_map_title.setStyleSheet(f"color: {COLORS['text_secondary']}; font-weight: bold; font-size: 12px;")
         self.lbl_map_title.setAlignment(Qt.AlignCenter)
         analysis_container.addWidget(self.lbl_map_title)
 
-        self.lbl_map_result = QLabel("Sonuclar burada gorunecek")
+        self.lbl_map_result = QLabel("Sonuçlar burada görünecek")
         self.lbl_map_result.setAlignment(Qt.AlignCenter)
         self.lbl_map_result.setStyleSheet(f"""
             border: 1px solid {COLORS['border']};
@@ -546,7 +535,7 @@ class UIManager(QWidget):
             background: {COLORS['bg_card']};
             color: {COLORS['text_secondary']};
         """)
-        self.lbl_map_result.setMinimumSize(400, 380)
+        self.lbl_map_result.setMinimumSize(550, 480)
         analysis_container.addWidget(self.lbl_map_result)
         map_area.addLayout(analysis_container)
 
@@ -556,8 +545,8 @@ class UIManager(QWidget):
 
     def load_image(self):
         file_name, _ = QFileDialog.getOpenFileName(
-            self, "Analiz Icin Gorsel Sec", "",
-            "Resim Dosyalari (*.png *.jpg *.jpeg *.bmp *.webp)"
+            self, "Analiz İçin Görsel Seç", "",
+            "Resim Dosyaları (*.png *.jpg *.jpeg *.bmp *.webp)"
         )
         if file_name:
             self.image_path = file_name
@@ -565,7 +554,7 @@ class UIManager(QWidget):
 
             # Tab 1: Orijinal
             self.lbl_original.setPixmap(
-                pixmap.scaled(420, 320, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.scaled(520, 420, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
             self.lbl_original.setStyleSheet(f"""
                 border: 2px solid {COLORS['gradient_start']};
@@ -575,14 +564,14 @@ class UIManager(QWidget):
 
             # Tab 2: Harita sayfasindaki orijinal
             self.lbl_map_original.setPixmap(
-                pixmap.scaled(400, 380, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.scaled(550, 480, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
 
             # Resetle
-            self.gauge.set_score(0, "Hazir", COLORS['gradient_start'], "")
-            self.lbl_verdict_desc.setText("Analiz baslatmak icin 🧠 butonuna tiklayin")
+            self.gauge.set_score(0, "Hazır", COLORS['gradient_start'], "")
+            self.lbl_verdict_desc.setText("Analiz başlatmak için 🧠 butonuna tıklayın")
             self.combo_view.clear()
-            self.combo_view.addItem("Lutfen Analizi Baslatin")
+            self.combo_view.addItem("Lütfen Analizi Başlatın")
             self.combo_view.setEnabled(False)
             self.btn_analyze.setEnabled(True)
 
@@ -622,13 +611,13 @@ class UIManager(QWidget):
 
         except Exception as e:
             self.gauge.set_score(0, "HATA", COLORS['accent_red'], "❌")
-            self.lbl_verdict_desc.setText(f"Analiz hatasi: {str(e)}")
+            self.lbl_verdict_desc.setText(f"Analiz hatası: {str(e)}")
             import traceback
             traceback.print_exc()
 
         finally:
             self.btn_analyze.setEnabled(True)
-            self.btn_analyze.setText("🧠  Analizi Baslat")
+            self.btn_analyze.setText("🧠  Analizi Başlat")
 
     # ─── UI GUNCELLEME ──────────────────────
 
@@ -744,7 +733,7 @@ class UIManager(QWidget):
 
             pixmap = QPixmap.fromImage(q_img)
             self.lbl_map_result.setPixmap(
-                pixmap.scaled(400, 380, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                pixmap.scaled(550, 480, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             )
 
     @staticmethod

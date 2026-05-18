@@ -92,14 +92,14 @@ class ManipulationDetector:
         }
 
         maps = {
-            "Gurultu Residual": noise_map,
-            "Akilli ELA": ela_map,
+            "Gürültü Residual": noise_map,
+            "Akıllı ELA": ela_map,
             "FFT Frekans": fft_map,
             "DCT Spektrum": dct_map,
-            "Wavelet HH Bandi": wavelet_map,
+            "Wavelet HH Bandı": wavelet_map,
             "Renk Doygunluk": color_map,
             "GLCM Doku": glcm_map,
-            "Kenar Haritasi": edge_map,
+            "Kenar Haritası": edge_map,
             "LBP Mikro-Doku": lbp_map,
         }
 

@@ -37,11 +37,11 @@ class ConfidenceEngine:
 
     # Skor → Karar esleme tablosu
     VERDICT_TABLE = [
-        (25,  "GERCEK",             "Yuksek guvenle gercek fotograf.",                       "#2ecc71", "🟢"),
-        (45,  "MUHTEMELEN GERCEK",  "Algoritmalar dusuk risk tespit etti.",                   "#3498db", "🔵"),
-        (65,  "BELIRSIZ",          "Karisik sinyaller — bazi algoritmalar supheli buldu.",    "#f1c40f", "🟡"),
-        (85,  "SUPHELI",          "Birden fazla algoritma AI izleri tespit etti.",           "#e67e22", "🟠"),
-        (101, "AI URETIMI",        "Cok guclu yapay uretim sinyalleri.",                     "#e74c3c", "🔴"),
+        (25,  "GERÇEK",             "Yüksek güvenle gerçek fotoğraf.",                       "#2ecc71", "🟢"),
+        (45,  "MUHTEMELEN GERÇEK",  "Algoritmalar düşük risk tespit etti.",                   "#3498db", "🔵"),
+        (65,  "BELİRSİZ",          "Karışık sinyaller — bazı algoritmalar şüpheli buldu.",    "#f1c40f", "🟡"),
+        (85,  "ŞÜPHELİ",          "Birden fazla algoritma AI izleri tespit etti.",           "#e67e22", "🟠"),
+        (101, "AI ÜRETİMİ",        "Çok güçlü yapay üretim sinyalleri.",                     "#e74c3c", "🔴"),
     ]
 
     @classmethod
@@ -261,9 +261,9 @@ class ConfidenceEngine:
         if is_recaptured:
             return {
                 "final_score": round(raw_score, 1),
-                "verdict": "EKRANDAN CEKIM",
-                "description": "FFT analizi ekran (Moiré) izgarasi tespit etti. "
-                               "Bu gorsel bir ekrandan fotograflanmis olabilir.",
+                "verdict": "EKRANDAN ÇEKİM",
+                "description": "FFT analizi ekran (Moiré) ızgarası tespit etti. "
+                               "Bu görsel bir ekrandan fotoğraflanmış olabilir.",
                 "color": "#8e44ad",
                 "emoji": "🟣",
                 "exif_adjustment": exif_adjustment,
@@ -317,14 +317,14 @@ class ConfidenceEngine:
         """UI'da gosterilecek anlasilir algoritma isimleri."""
         return {
             "metadata":         "EXIF / Metadata",
-            "noise":            "Gurultu Residual",
-            "ela":              "Akilli ELA",
+            "noise":            "Gürültü Residual",
+            "ela":              "Akıllı ELA",
             "fft":              "FFT Frekans",
             "dct":              "DCT Spektrum",
             "wavelet":          "Wavelet Alt-Bant",
-            "color_stats":      "Renk Istatistik",
+            "color_stats":      "Renk İstatistik",
             "glcm_texture":     "GLCM Doku",
-            "edge_consistency": "Kenar Tutarlilik",
+            "edge_consistency": "Kenar Tutarlılık",
             "lbp_texture":      "LBP Mikro-Doku",
         }
 
@@ -332,14 +332,14 @@ class ConfidenceEngine:
     def get_algo_descriptions(cls) -> dict:
         """Her algoritmanin kisa aciklamasi."""
         return {
-            "metadata":         "EXIF verilerinde kamera/donanim izi arar. Yoksa suphe puani artar.",
-            "noise":            "Duz alan sensor gurultusunu analiz eder; sahne dokusunu gurultuden ayirmaya calisir.",
-            "ela":              "JPEG sikistirma sonrasi hata seviyesini analiz eder. Montaj ve yapay alanlari yakalar.",
+            "metadata":         "EXIF verilerinde kamera/donanım izi arar. Yoksa şüphe puanı artar.",
+            "noise":            "Düz alan sensör gürültüsünü analiz eder; sahne dokusunu gürültüden ayırmaya çalışır.",
+            "ela":              "JPEG sıkıştırma sonrası hata seviyesini analiz eder. Montaj ve yapay alanları yakalar.",
             "fft":              "Frekans spektrumunda periyodik paternler ve Moiré izleri arar.",
-            "dct":              "DCT katsayi dagilimini analiz eder. AI'in dogal olmayan frekans profili tespit edilir.",
-            "wavelet":          "Coklu cozunurlukte frekans analizi; asiri puruzsuzluk ve sentetik yogun detayi yakalar.",
-            "color_stats":      "Renk kanallari arasi korelasyon ve histogram entropisi analiz eder.",
-            "glcm_texture":     "Mikro-doku tutarsizliklarini GLCM matrisi ile tespit eder.",
-            "edge_consistency": "Kenar keskinligi ve tutarliligini analiz eder. AI kenarlari genellikle cok duzgundur.",
-            "lbp_texture":      "Local Binary Pattern (LBP) histogrami ile piksel seviyesindeki dogal olmayan tekduzeligi tespit eder.",
+            "dct":              "DCT katsayı dağılımını analiz eder. AI'ın doğal olmayan frekans profili tespit edilir.",
+            "wavelet":          "Çoklu çözünürlükte frekans analizi; aşırı pürüzsüzlük ve sentetik yoğun detayı yakalar.",
+            "color_stats":      "Renk kanalları arası korelasyon ve histogram entropisi analiz eder.",
+            "glcm_texture":     "Mikro-doku tutarsızlıklarını GLCM matrisi ile tespit eder.",
+            "edge_consistency": "Kenar keskinliği ve tutarlılığını analiz eder. AI kenarları genellikle çok düzgündür.",
+            "lbp_texture":      "Local Binary Pattern (LBP) histogramı ile piksel seviyesindeki doğal olmayan tekdüzeliği tespit eder.",
         }
